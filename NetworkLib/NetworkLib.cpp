@@ -2,11 +2,11 @@
 
 void InitializeConnection(Connection* connection) {
     connection->socket = INVALID_SOCKET;
-    memset(&connection->address, 0, sizeof(connection->address));  // Zero out the address structure
+    // Zero out the address structure
+    memset(&connection->address, 0, sizeof(connection->address));
 }
 
-int InitializeWindowsSockets()
-{
+int InitializeWindowsSockets() {
     WSADATA wsaData;
 
     // Initialize windows sockets library for this process
@@ -20,8 +20,7 @@ int InitializeWindowsSockets()
     return 0;
 }
 
-int CreateServerSocket(Connection* connection, const char* port)
-{
+int CreateServerSocket(Connection* connection, const char* port) {
     int iResult;
 
     // Prepare address information structures
@@ -32,7 +31,7 @@ int CreateServerSocket(Connection* connection, const char* port)
     hints.ai_family = AF_INET;       // IPv4 address
     hints.ai_socktype = SOCK_STREAM; // Provide reliable data streaming
     hints.ai_protocol = IPPROTO_TCP; // Use TCP protocol
-    hints.ai_flags = AI_PASSIVE;     // 
+    hints.ai_flags = AI_PASSIVE;
 
     // Resolve the server address and port
     iResult = getaddrinfo(NULL, port, &hints, &resultingAddress);
@@ -44,11 +43,11 @@ int CreateServerSocket(Connection* connection, const char* port)
 
     // Create a SOCKET for listening on server
     connection->socket = socket(resultingAddress->ai_family, resultingAddress->ai_socktype, resultingAddress->ai_protocol);
-	if (connection->socket == INVALID_SOCKET) {
+    if (connection->socket == INVALID_SOCKET) {
         PrintSocketError("socket failed");
         freeaddrinfo(resultingAddress);
 
-        return connection->socket;
+        return -1;
     }
 
     // Setup the TCP listening socket - bind port number and local address to socket
@@ -56,7 +55,7 @@ int CreateServerSocket(Connection* connection, const char* port)
     if (iResult == SOCKET_ERROR) {
         PrintSocketError("bind failed");
         freeaddrinfo(resultingAddress);
-        closesocket(connection->socket);
+        CloseConnection(connection);
 
         return iResult;
     }
@@ -68,16 +67,15 @@ int CreateServerSocket(Connection* connection, const char* port)
     iResult = listen(connection->socket, SOMAXCONN);
     if (iResult == SOCKET_ERROR) {
         PrintSocketError("listen failed");
-        closesocket(connection->socket);
+        CloseConnection(connection);
 
         return iResult;
     }
 
-	return 0;
+    return 0;
 }
 
-int CreateClientSocket(Connection* connection, const char* ipAddress, const unsigned short port)
-{
+int CreateClientSocket(Connection* connection, const char* ipAddress, const char* port) {
     int iResult;
 
     // Create a socket for connecting to the server
@@ -85,20 +83,30 @@ int CreateClientSocket(Connection* connection, const char* ipAddress, const unsi
     if (connection->socket == INVALID_SOCKET) {
         PrintSocketError("socket failed");
 
-        return connection->socket;
+        return -1;
     }
 
     // Specify server address using sockaddr_in
     sockaddr_in serverAddress;
     serverAddress.sin_family = AF_INET;
-    serverAddress.sin_addr.s_addr = inet_addr(ipAddress);   // Use the IP passed in, e.g., "127.0.0.1"
-    serverAddress.sin_port = htons(port);                   // Convert the port string to an integer
+    serverAddress.sin_addr.s_addr = inet_addr(ipAddress);
+    serverAddress.sin_port = htons(atoi(port));
 
     // Connect to server
     iResult = connect(connection->socket, (SOCKADDR*)&serverAddress, sizeof(serverAddress));
     if (iResult == SOCKET_ERROR) {
         PrintSocketError("connect failed");
-        closesocket(connection->socket);
+        CloseConnection(connection);
+
+        return iResult;
+    }
+
+    // Sets the socket into non-blocking mode
+    u_long mode = 1;
+    iResult = ioctlsocket(connection->socket, FIONBIO, &mode);
+    if (iResult != NO_ERROR) {
+        PrintSocketError("ioctlsocket failed");
+        CloseConnection(connection);
 
         return iResult;
     }
@@ -106,50 +114,159 @@ int CreateClientSocket(Connection* connection, const char* ipAddress, const unsi
     return 0;
 }
 
-int AcceptConnection(Connection* serverConnection, Connection* clientConnection)
-{
+int AcceptConnection(Connection* serverConnection, Connection* clientConnection) {
     int addressSize = sizeof(clientConnection->address);
 
     clientConnection->socket = accept(serverConnection->socket, (struct sockaddr*)&clientConnection->address, &addressSize);
     if (clientConnection->socket == INVALID_SOCKET) {
         PrintSocketError("accept failed");
 
-        return clientConnection->socket;
+        return -1;
     }
 
     return 0;
 }
 
-int ReceiveData(Connection* connection, char* buffer, int bufferLength)
-{
-    int iResult = recv(connection->socket, buffer, bufferLength, 0);
+int ReceiveData(Connection* connection, char* buffer, int bufferLength) {
+    int iResult;
+    fd_set readSet{};
+    struct timeval timeout {};
+    int lastError;
+
+    // Set a timeout
+    timeout.tv_sec = 0;  // Timeout in seconds
+    timeout.tv_usec = 0; // Timeout in microseconds
+
+    while (true) {
+        // Initialize the fd_set for the socket
+        FD_ZERO(&readSet);
+        FD_SET(connection->socket, &readSet);
+
+        // Wait for the socket to become readable
+        iResult = select(0, &readSet, NULL, NULL, &timeout);
+        if (iResult == SOCKET_ERROR) {
+            PrintSocketError("select failed");
+
+            return iResult;
+        }
+        else if (iResult == 0) {
+            // Timeout occurred
+            continue;
+        }
+        else {
+            break;
+        }
+    }
+
+    // Check if the socket is readable
+    if (FD_ISSET(connection->socket, &readSet)) {
+        // Call recv() to read data
+        iResult = recv(connection->socket, buffer, bufferLength, 0);
+
+        if (iResult == SOCKET_ERROR) {
+            lastError = WSAGetLastError();
+
+            if (lastError == WSAEWOULDBLOCK) {
+                // Would block; no data available yet
+                PrintInfo("No data available to read (would block)");
+
+                return 0; // Return 0 to indicate no data
+            }
+            else {
+                PrintSocketError("recv failed");
+
+                return iResult;
+            }
+        }
+        else if (iResult == 0) {
+            // Connection closed by the server
+            PrintInfo("Connection closed by peer");
+        }
+    }
+
+    iResult = recv(connection->socket, buffer, bufferLength, 0);
     if (iResult == SOCKET_ERROR) {
         PrintSocketError("recv failed");
 
         return iResult;
-	}
-
-    return iResult;
-}
-
-int SendData(Connection* connection, const char* data, int length)
-{
-    int iResult = send(connection->socket, data, length, 0);
-    if (iResult == SOCKET_ERROR) {
-        PrintSocketError("send failed");
-
-        return iResult;
     }
 
+    // Return the total number of bytes received
     return iResult;
 }
 
-void CloseConnection(Connection* connection)
-{
+int SendData(Connection* connection, const char* data, int length) {
+    int iResult;
+    fd_set writeSet{};
+    struct timeval timeout {};
+    int lastError;
+    int bytesSent = 0;
+
+    // Set a timeout
+    timeout.tv_sec = 0;  // Timeout in seconds
+    timeout.tv_usec = 0; // Timeout in microseconds
+
+    while (bytesSent < length) {
+        while (true) {
+            // Initialize the fd_set for the socket
+            FD_ZERO(&writeSet);
+            FD_SET(connection->socket, &writeSet);
+
+            // Wait for the socket to become writable
+            iResult = select(0, NULL, &writeSet, NULL, &timeout);
+            if (iResult == SOCKET_ERROR) {
+                PrintSocketError("select failed");
+
+                return SOCKET_ERROR;
+            }
+            else if (iResult == 0) {
+                // Timeout occurred
+                return iResult;
+            }
+            else {
+                break;
+            }
+        }
+
+        // Check if the socket is writable
+        if (FD_ISSET(connection->socket, &writeSet)) {
+            // Attempt to send data
+            iResult = send(connection->socket, data + bytesSent, length - bytesSent, 0);
+            if (iResult == SOCKET_ERROR) {
+                lastError = WSAGetLastError();
+
+                if (lastError == WSAEWOULDBLOCK) {
+                    // Would block; try again in the next iteration
+                    continue;
+                }
+                else {
+                    PrintSocketError("send failed");
+
+                    return SOCKET_ERROR;
+                }
+            }
+
+            // Update the number of bytes sent
+            bytesSent += iResult;
+        }
+    }
+
+    // Return the total number of bytes sent
+    return bytesSent;
+}
+
+
+void CloseConnection(Connection* connection) {
+    if (connection->socket == INVALID_SOCKET) {
+        PrintWarning("Trying to close an invalid socket");
+    }
+
     int iResult = closesocket(connection->socket);
     if (iResult == SOCKET_ERROR) {
         PrintSocketError("Closesocket failed");
     }
+
+    InitializeConnection(connection);
 }
 
 void ShutdownServer(Connection* serverConnection, Connection clientConnections[], int clientCount) {
@@ -157,32 +274,55 @@ void ShutdownServer(Connection* serverConnection, Connection clientConnections[]
 
     // Stop accepting new connections on the server socket
     if (serverConnection->socket != INVALID_SOCKET) {
-       iResult = shutdown(serverConnection->socket, SD_BOTH);
-        if (iResult == SOCKET_ERROR)
-        {
+        iResult = shutdown(serverConnection->socket, SD_BOTH);
+        if (iResult == SOCKET_ERROR) {
             PrintSocketError("shutdown failed");
         }
 
         CloseConnection(serverConnection);
-        serverConnection->socket = INVALID_SOCKET;
     }
 
     // Close each active client connection
     for (int i = 0; i < clientCount; i++) {
         if (clientConnections[i].socket != INVALID_SOCKET) {
             iResult = shutdown(clientConnections[i].socket, SD_BOTH);
-            if (iResult == SOCKET_ERROR)
-            {
+            if (iResult == SOCKET_ERROR) {
                 PrintSocketError("shutdown failed");
             }
 
             CloseConnection(&clientConnections[i]);
-            clientConnections[i].socket = INVALID_SOCKET;
         }
     }
 }
 
-void PrintSocketError(const char* message)
-{
-    fprintf(stderr, "%s with error: %d\n", message, WSAGetLastError());
+void ShutdownClient(Connection* clientConnection) {
+    int iResult;
+
+    // Check if the client socket is valid
+    if (clientConnection->socket != INVALID_SOCKET) {
+        // Shutdown the client socket for both send and receive
+        iResult = shutdown(clientConnection->socket, SD_BOTH);
+        if (iResult == SOCKET_ERROR) {
+            PrintSocketError("shutdown failed");
+        }
+
+        // Close the socket and clean up the connection
+        CloseConnection(clientConnection);
+    }
+}
+
+void PrintInfo(const char* message) {
+    fprintf(stdout, "[INFO] %s\n", message);
+}
+
+void PrintWarning(const char* message) {
+    fprintf(stderr, "[WARN] %s\n", message);
+}
+
+void PrintError(const char* message) {
+    fprintf(stderr, "[ERRO] %s\n", message);
+}
+
+void PrintSocketError(const char* message) {
+    fprintf(stderr, "[SERR] %s with error: %d\n", message, WSAGetLastError());
 }

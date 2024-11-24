@@ -1,18 +1,20 @@
 #include "LoadBalancer.h"
 
-int main(void)
-{
+int main(void) {
     // Variable used to store function return value
     int iResult;
+
     // Socket used for listening for new clients
     Connection serverConnection;
     InitializeConnection(&serverConnection);
+
     // Socket used for communication with client
-	Connection clientConnection;
+    Connection clientConnection;
     InitializeConnection(&clientConnection);
     Connection clientConnections[] = { clientConnection };
+
     // Buffer used for storing incoming data
-    char recieveBuffer[DEFAULT_BUFLEN];
+    char receiveBuffer[BUFFER_SIZE];
 
     // Initialize Winsock
     iResult = InitializeWindowsSockets();
@@ -21,7 +23,7 @@ int main(void)
     }
 
     // Setup a TCP listening socket
-    iResult = CreateServerSocket(&serverConnection, DEFAULT_PORT_STR);
+    iResult = CreateServerSocket(&serverConnection, SERVER_PORT);
     if (iResult != 0) {
         CloseConnection(&serverConnection);
         WSACleanup();
@@ -31,38 +33,32 @@ int main(void)
 
     printf("Server initialized, waiting for clients.\n");
 
-    do
-    {
+    do {
         // Wait for clients and accept client connections.
         // Returning value is acceptedSocket used for further
         // Client<->Server communication. This version of
         // server will handle only one client.
         iResult = AcceptConnection(&serverConnection, &clientConnection);
-        if (iResult != 0)
-        {
+        if (iResult != 0) {
             CloseConnection(&serverConnection);
             WSACleanup();
 
             return 1;
         }
 
-        do
-        {
+        do {
             // Receive data until the client shuts down the connection
-            iResult = ReceiveData(&clientConnection, recieveBuffer, DEFAULT_BUFLEN);
-            if (iResult > 0)
-            {
-                printf("Message received from client: %s.\n", recieveBuffer);
+            iResult = ReceiveData(&clientConnection, receiveBuffer, BUFFER_SIZE);
+            if (iResult > 0) {
+                printf("Message received from client: %s.\n", receiveBuffer);
             }
-            else if (iResult == 0)
-            {
+            else if (iResult == 0) {
                 // Connection was closed gracefully
                 printf("Connection with client closed.\n");
 
                 CloseConnection(&clientConnection);
             }
-            else
-            {
+            else {
                 CloseConnection(&clientConnection);
             }
         } while (iResult > 0);
