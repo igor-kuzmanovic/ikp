@@ -22,7 +22,7 @@
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
     <ProjectGuid>{516c8fa7-e20e-4964-b10c-3428fcc0165d}</ProjectGuid>
-    <RootNamespace>NetworkLib</RootNamespace>
+    <RootNamespace>Lib</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -140,9 +140,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="LoggingLib.h" />
     <ClInclude Include="NetworkLib.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="LoggingLib.cpp" />
     <ClCompile Include="NetworkLib.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -16,6 +16,10 @@
 
 #pragma comment(lib, "ws2_32.lib") // Need to link with Ws2_32.lib
 
+// User libraries
+
+#include "LoggingLib.h"
+
 // API
 
 // Structures
@@ -57,15 +61,3 @@ void ShutdownServer(Connection* serverConnection, Connection clientConnections[]
 
 // Shuts down a client
 void ShutdownClient(Connection* clientConnection);
-
-// Helper function to print info messages
-void PrintInfo(const char* message);
-
-// Helper function to print warning messages
-void PrintWarning(const char* message);
-
-// Helper function to print error messages
-void PrintError(const char* message);
-
-// Helper function to print socket error messages
-void PrintSocketError(const char* message);

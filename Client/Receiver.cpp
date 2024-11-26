@@ -1,6 +1,9 @@
 #include "Receiver.h"
 
 DWORD WINAPI StartReceiver(LPVOID lpParam) {
+    // Socket used for communicating with server
+    Connection connection = *(Connection*)lpParam;
+
     // Variable used to store function return value
     int iResult = 0;
 
@@ -10,25 +13,23 @@ DWORD WINAPI StartReceiver(LPVOID lpParam) {
     // Buffer used for receiving messages
     char* receiveBuffer = (char*)malloc(BUFFER_SIZE + sizeof(char));
 
-    // Socket used for communicating with server
-    Connection connection = *(Connection*)lpParam;
-
-    for (int i = 0; i < 5; i++) {
+    int messageCount = 5;
+    for (int i = 0; i < messageCount; i++) {
         // Receive data until the server shuts down the connection
         iResult = ReceiveData(&connection, receiveBuffer, BUFFER_SIZE);
         if (iResult > 0) {
-            printf("Message received from server: %s.\n", receiveBuffer);
+            PrintInfo("Message received from server: %s.", receiveBuffer);
         }
         else if (iResult == 0) {
             // Connection was closed gracefully
-            printf("Connection with server closed.\n");
+            PrintInfo("Connection with server closed.");
 
             break;
         }
         else {
             break;
         }
-    }
+    };
 
     // Free the memory used by the receive buffer
     free(receiveBuffer);

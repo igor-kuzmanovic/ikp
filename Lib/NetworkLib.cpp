@@ -1,5 +1,9 @@
 #include "NetworkLib.h"
 
+static void PrintSocketError(const char* message) {
+    PrintError("%s with error %d.", message, WSAGetLastError());
+}
+
 void InitializeConnection(Connection* connection) {
     connection->socket = INVALID_SOCKET;
     // Zero out the address structure
@@ -151,9 +155,12 @@ int ReceiveData(Connection* connection, char* buffer, int bufferLength) {
         }
         else if (iResult == 0) {
             // Timeout occurred
+
             continue;
         }
         else {
+            PrintDebug("Select code %d.", iResult);
+
             break;
         }
     }
@@ -167,10 +174,9 @@ int ReceiveData(Connection* connection, char* buffer, int bufferLength) {
             lastError = WSAGetLastError();
 
             if (lastError == WSAEWOULDBLOCK) {
-                // Would block; no data available yet
-                PrintInfo("No data available to read (would block)");
+                PrintDebug("No data available to read (would block).");
 
-                return 0; // Return 0 to indicate no data
+                return 0; 
             }
             else {
                 PrintSocketError("recv failed");
@@ -179,8 +185,7 @@ int ReceiveData(Connection* connection, char* buffer, int bufferLength) {
             }
         }
         else if (iResult == 0) {
-            // Connection closed by the server
-            PrintInfo("Connection closed by peer");
+            PrintInfo("Connection closed by peer.");
         }
     }
 
@@ -258,7 +263,7 @@ int SendData(Connection* connection, const char* data, int length) {
 
 void CloseConnection(Connection* connection) {
     if (connection->socket == INVALID_SOCKET) {
-        PrintWarning("Trying to close an invalid socket");
+        PrintWarning("Trying to close an invalid socket.");
     }
 
     int iResult = closesocket(connection->socket);
@@ -309,20 +314,4 @@ void ShutdownClient(Connection* clientConnection) {
         // Close the socket and clean up the connection
         CloseConnection(clientConnection);
     }
-}
-
-void PrintInfo(const char* message) {
-    fprintf(stdout, "[INFO] %s\n", message);
-}
-
-void PrintWarning(const char* message) {
-    fprintf(stderr, "[WARN] %s\n", message);
-}
-
-void PrintError(const char* message) {
-    fprintf(stderr, "[ERRO] %s\n", message);
-}
-
-void PrintSocketError(const char* message) {
-    fprintf(stderr, "[SERR] %s with error: %d\n", message, WSAGetLastError());
 }

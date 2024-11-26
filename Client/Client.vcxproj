@@ -104,7 +104,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)\NetworkLib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\Lib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -141,7 +141,7 @@
     <ClInclude Include="Sender.h" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\NetworkLib\NetworkLib.vcxproj">
+    <ProjectReference Include="..\Lib\Lib.vcxproj">
       <Project>{516c8fa7-e20e-4964-b10c-3428fcc0165d}</Project>
     </ProjectReference>
   </ItemGroup>

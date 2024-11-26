@@ -23,7 +23,7 @@ int main() {
         return 1;
     }
 
-    printf("Client connect socket is ready.\n");
+    PrintInfo("Client connect socket is ready.");
 
     // An array to hold the sender and receiver threads
     HANDLE threads[2]{};
@@ -31,7 +31,7 @@ int main() {
     // Starts periodically sending requests to the server in a new thread
     threads[0] = CreateThread(NULL, 0, &StartSender, &connection, NULL, NULL);
     if (threads[0] == NULL) {
-        printf("CreateThread failed with error: %d.\n", GetLastError());
+        PrintError("CreateThread failed with error: %d.", GetLastError());
 
         // Close the connection
         CloseConnection(&connection);
@@ -45,7 +45,7 @@ int main() {
     // Starts receiving responses from the server in a new thread
     threads[1] = CreateThread(NULL, 0, &StartReceiver, &connection, NULL, NULL);
     if (threads[1] == NULL) {
-        printf("CreateThread failed with error: %d.\n", GetLastError());
+        PrintError("CreateThread failed with error: %d.", GetLastError());
 
         // Close sender handle
         CloseHandle(threads[0]);
@@ -74,6 +74,8 @@ int main() {
 
     // Cleanup Winsock
     WSACleanup();
+
+    int _ = getchar(); // Wait for key press
 
     return 0;
 }

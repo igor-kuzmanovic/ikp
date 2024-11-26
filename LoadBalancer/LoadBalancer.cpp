@@ -31,7 +31,7 @@ int main(void) {
         return 1;
     }
 
-    printf("Server initialized, waiting for clients.\n");
+    PrintInfo("Server initialized, waiting for clients.");
 
     do {
         // Wait for clients and accept client connections.
@@ -48,23 +48,21 @@ int main(void) {
 
         do {
             // Receive data until the client shuts down the connection
-            iResult = ReceiveData(&clientConnection, receiveBuffer, BUFFER_SIZE);
+            iResult = ReceiveData(&clientConnection, receiveBuffer, BUFFER_SIZE + 1);
             if (iResult > 0) {
-                printf("Message received from client: %s.\n", receiveBuffer);
+                PrintInfo("Message received from client: %s.", receiveBuffer);
             }
             else if (iResult == 0) {
-                // Connection was closed gracefully
-                printf("Connection with client closed.\n");
+                PrintInfo("Connection with client closed.");
 
                 CloseConnection(&clientConnection);
             }
             else {
+                PrintDebug("Receive code %d.", iResult);
+
                 CloseConnection(&clientConnection);
             }
         } while (iResult > 0);
-
-        // Here is where server shutdown logic could be placed
-
     } while (1);
 
     // Shutdown the connection and server since we're done
@@ -72,6 +70,8 @@ int main(void) {
 
     // Cleanup Winsock
     WSACleanup();
+
+    int _ = getchar(); // Wait for key press
 
     return 0;
 }
