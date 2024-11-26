@@ -24,7 +24,6 @@ SOCKET CreateListenSocket(const char* port) {
     // Prepare address information structures
     addrinfo* resultingAddress = NULL;
     addrinfo hints;
-
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_INET;       // IPv4 address
     hints.ai_socktype = SOCK_STREAM; // Provide reliable data streaming
@@ -39,7 +38,7 @@ SOCKET CreateListenSocket(const char* port) {
         return INVALID_SOCKET;
     }
 
-    // Create a SOCKET for listening on server
+    // Create a socket
     SOCKET sock = socket(resultingAddress->ai_family, resultingAddress->ai_socktype, resultingAddress->ai_protocol);
     if (sock == INVALID_SOCKET) {
         PrintSocketError("socket failed");
@@ -48,7 +47,7 @@ SOCKET CreateListenSocket(const char* port) {
         return INVALID_SOCKET;
     }
 
-    // Setup the TCP listening socket - bind port number and local address to socket
+    // Binds the socket to the specified port and loopback address
     iResult = bind(sock, resultingAddress->ai_addr, (int)resultingAddress->ai_addrlen);
     if (iResult == SOCKET_ERROR) {
         PrintSocketError("bind failed");
@@ -70,6 +69,16 @@ SOCKET CreateListenSocket(const char* port) {
         return INVALID_SOCKET;
     }
 
+    // Sets the socket into non-blocking mode
+    u_long mode = 1;
+    iResult = ioctlsocket(sock, FIONBIO, &mode);
+    if (iResult != NO_ERROR) {
+        PrintSocketError("ioctlsocket failed");
+        CloseSocket(sock);
+
+        return iResult;
+    }
+
     return sock;
 }
 
@@ -85,7 +94,7 @@ SOCKET CreateConnectSocket(const char* ipAddress, const char* port) {
     }
 
     // Specify server address using sockaddr_in
-    sockaddr_in serverAddress;
+    sockaddr_in serverAddress{};
     serverAddress.sin_family = AF_INET;
     serverAddress.sin_addr.s_addr = inet_addr(ipAddress);
     serverAddress.sin_port = htons(atoi(port));
@@ -95,6 +104,30 @@ SOCKET CreateConnectSocket(const char* ipAddress, const char* port) {
     if (iResult == SOCKET_ERROR) {
         PrintSocketError("connect failed");
         CloseSocket(sock);
+
+        return INVALID_SOCKET;
+    }
+
+    // Sets the socket into non-blocking mode
+    u_long mode = 1;
+    iResult = ioctlsocket(sock, FIONBIO, &mode);
+    if (iResult != NO_ERROR) {
+        PrintSocketError("ioctlsocket failed");
+        CloseSocket(sock);
+
+        return iResult;
+    }
+
+    return sock;
+}
+
+SOCKET AcceptSocket(SOCKET serverSock) {
+    sockaddr_in address{};
+    int addressSize = sizeof(struct sockaddr_in);
+
+    SOCKET sock = accept(serverSock, (struct sockaddr*)&address, &addressSize);
+    if (sock == INVALID_SOCKET) {
+        PrintSocketError("accept failed");
 
         return INVALID_SOCKET;
     }
@@ -118,27 +151,11 @@ int SetSocketNonBlocking(SOCKET sock) {
     return iResult;
 }
 
-SOCKET AcceptSocket(SOCKET serverSock) {
-    sockaddr_in address;
-    int addressSize = sizeof(struct sockaddr_in);
-
-    SOCKET sock = accept(serverSock, (struct sockaddr*)&address, &addressSize);
-    if (sock == INVALID_SOCKET) {
-        PrintSocketError("accept failed");
-
-        return INVALID_SOCKET;
-    }
-
-    return sock;
-}
-
-int ReceiveData(SOCKET sock, char* buffer, int bufferLength) {
+int SelectForReceive(SOCKET sock) {
     int iResult;
+
     fd_set readSet{};
     struct timeval timeout {};
-    int lastError;
-
-    // Set a timeout
     timeout.tv_sec = 0;  // Timeout in seconds
     timeout.tv_usec = 0; // Timeout in microseconds
 
@@ -147,116 +164,200 @@ int ReceiveData(SOCKET sock, char* buffer, int bufferLength) {
         FD_ZERO(&readSet);
         FD_SET(sock, &readSet);
 
-        // Wait for the socket to become readable
         iResult = select(0, &readSet, NULL, NULL, &timeout);
-        if (iResult == SOCKET_ERROR) {
+        if (iResult == 0) {
+            // Timeout occurred
+            continue;
+        } else if (iResult == SOCKET_ERROR) {
             PrintSocketError("select failed");
 
             return iResult;
-        }
-        else if (iResult == 0) {
-            // Timeout occurred
-
-            continue;
-        }
-        else {
-            break;
+        } else {
+            return 1;
         }
     }
+}
 
-    // Check if the socket is readable
-    if (FD_ISSET(sock, &readSet)) {
-        // Call recv() to read data
-        iResult = recv(sock, buffer, bufferLength, 0);
+int ReceiveData(SOCKET sock, char* buffer) {
+    int iResult;
 
-        if (iResult == SOCKET_ERROR) {
-            lastError = WSAGetLastError();
+    int bytesReceived = 0;
 
-            if (lastError == WSAEWOULDBLOCK) {
-                PrintDebug("No data available to read (would block).");
+    // Call the recv function until the first 4 bytes are received
+    while (bytesReceived < sizeof(int)) {
+        iResult = SelectForReceive(sock);
+        if (iResult < 0) {
+            PrintSocketError("recv failed");
 
-                return 0;
-            }
-            else {
-                PrintSocketError("recv failed");
-
-                return iResult;
-            }
+            return iResult;
         }
-        else if (iResult == 0) {
-            PrintInfo("Connection closed by peer.");
+
+        // if (FD_ISSET(sock, &readSet)) {
+        iResult = recv(sock, buffer + bytesReceived, sizeof(int) - bytesReceived, 0);
+        if (iResult <= 0) {
+            PrintSocketError("recv failed");
+
+            return iResult;
         }
+
+        bytesReceived += iResult;
     }
 
-    iResult = recv(sock, buffer, bufferLength, 0);
-    if (iResult == SOCKET_ERROR) {
-        PrintSocketError("recv failed");
+    // Get the length of the remaining message
+    int length = *(int*)buffer;
 
-        return iResult;
+    bytesReceived = 0;
+
+    // Call the recv function until the whole message is received
+    while (bytesReceived < length) {
+        iResult = SelectForReceive(sock);
+        if (iResult < 0) {
+            return iResult;
+        }
+
+        // if (FD_ISSET(sock, &readSet)) {
+        iResult = recv(sock, buffer + bytesReceived, length - bytesReceived, 0);
+        if (iResult <= 0) {
+            PrintSocketError("recv failed");
+
+            return iResult;
+        }
+
+        bytesReceived += iResult;
     }
 
     // Return the total number of bytes received
-    return iResult;
+    return bytesReceived;
 }
 
-int SendData(SOCKET sock, const char* data, int length) {
+int SelectForSend(SOCKET sock) {
     int iResult;
+
     fd_set writeSet{};
     struct timeval timeout {};
-    int lastError;
-    int bytesSent = 0;
-
-    // Set a timeout
     timeout.tv_sec = 0;  // Timeout in seconds
     timeout.tv_usec = 0; // Timeout in microseconds
 
-    while (bytesSent < length) {
-        while (true) {
-            // Initialize the fd_set for the socket
-            FD_ZERO(&writeSet);
-            FD_SET(sock, &writeSet);
+    while (true) {
+        // Initialize the fd_set for the socket
+        FD_ZERO(&writeSet);
+        FD_SET(sock, &writeSet);
 
-            // Wait for the socket to become writable
-            iResult = select(0, NULL, &writeSet, NULL, &timeout);
-            if (iResult == SOCKET_ERROR) {
-                PrintSocketError("select failed");
+        iResult = select(0, NULL, &writeSet, NULL, &timeout);
+        if (iResult == 0) {
+            // Timeout occurred
+            continue;
+        } else if (iResult == SOCKET_ERROR) {
+            PrintSocketError("select failed");
 
-                return SOCKET_ERROR;
-            }
-            else if (iResult == 0) {
-                // Timeout occurred
-
-                return iResult;
-            }
-            else {
-                break;
-            }
-        }
-
-        // Check if the socket is writable
-        if (FD_ISSET(sock, &writeSet)) {
-            // Attempt to send data
-            iResult = send(sock, data + bytesSent, length - bytesSent, 0);
-            if (iResult == SOCKET_ERROR) {
-                lastError = WSAGetLastError();
-
-                if (lastError == WSAEWOULDBLOCK) {
-                    // Would block; try again in the next iteration
-                    continue;
-                }
-                else {
-                    PrintSocketError("send failed");
-
-                    return SOCKET_ERROR;
-                }
-            }
-
-            // Update the number of bytes sent
-            bytesSent += iResult;
+            return iResult;
+        } else {
+            return 1;
         }
     }
+}
 
-    // Return the total number of bytes sent
+int SendData(SOCKET sock, const char* buffer) {
+    int iResult;
+
+    // Get the length of the message
+    int length = (int)strlen(buffer);
+    // Allocate new memory so the length of the message can be sent before the message
+    char tempBuffer[sizeof(int)]{};
+    // Pack the length of the message at the start of the buffer
+    *(int*)tempBuffer = length;
+
+    int bytesSent = 0;
+
+    // Call the send function until the first 4 bytes are sent
+    while (bytesSent < (int)sizeof(int)) {
+        iResult = SelectForSend(sock);
+        if (iResult < 0) {
+            return iResult;
+        }
+
+        // if (FD_ISSET(sock, &writeSet)) {
+        iResult = send(sock, tempBuffer + bytesSent, sizeof(int) - bytesSent, 0);
+        if (iResult <= 0) {
+            PrintSocketError("send failed");
+
+            return iResult;
+        }
+
+        bytesSent += iResult;
+    }
+
+    bytesSent = 0;
+
+    // Calls the send function until the whole message is sent
+    while (bytesSent < length) {
+        iResult = SelectForSend(sock);
+        if (iResult < 0) {
+            return iResult;
+        }
+
+        // if (FD_ISSET(sock, &writeSet)) {
+        iResult = send(sock, buffer + bytesSent, length - bytesSent, 0);
+        if (iResult <= 0) {
+            PrintSocketError("send failed");
+
+            return iResult;
+        }
+
+        bytesSent += iResult;
+    }
+
+    return bytesSent;
+}
+
+int SendData(SOCKET sock, const char* buffer, int length) {
+    int iResult;
+
+    // Allocate new memory so the length of the message can be sent before the message
+    char tempBuffer[sizeof(int)]{};
+    // Pack the length of the message at the start of the buffer
+    *(int*)tempBuffer = length;
+
+    int bytesSent = 0;
+
+    // Call the send function until the first 4 bytes are sent
+    while (bytesSent < (int)sizeof(int)) {
+        iResult = SelectForSend(sock);
+        if (iResult < 0) {
+            return iResult;
+        }
+
+        // if (FD_ISSET(sock, &writeSet)) {
+        iResult = send(sock, tempBuffer + bytesSent, sizeof(int) - bytesSent, 0);
+        if (iResult <= 0) {
+            PrintSocketError("send failed");
+
+            return iResult;
+        }
+
+        bytesSent += iResult;
+    }
+
+    bytesSent = 0;
+
+    // Calls the send function until the whole message is sent
+    while (bytesSent < length) {
+        iResult = SelectForSend(sock);
+        if (iResult < 0) {
+            return iResult;
+        }
+
+        // if (FD_ISSET(sock, &writeSet)) {
+        iResult = send(sock, buffer + bytesSent, length - bytesSent, 0);
+        if (iResult <= 0) {
+            PrintSocketError("send failed");
+
+            return iResult;
+        }
+
+        bytesSent += iResult;
+    }
+
     return bytesSent;
 }
 

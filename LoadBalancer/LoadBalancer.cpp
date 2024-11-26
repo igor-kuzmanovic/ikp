@@ -41,7 +41,7 @@ int main(void) {
 
         do {
             // Receive data until the client shuts down the socket
-            iResult = ReceiveData(clientSock, receiveBuffer, BUFFER_SIZE + 1);
+            iResult = ReceiveData(clientSock, receiveBuffer);
             if (iResult > 0) {
                 PrintInfo("Message received from client: %s.", receiveBuffer);
             }

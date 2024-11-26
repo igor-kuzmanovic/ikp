@@ -39,11 +39,18 @@ SOCKET AcceptSocket(SOCKET serverSock);
 // Sets the socket into non-blocking mode
 int SetSocketNonBlocking(SOCKET sock);
 
+// Calls select until ready for receiving
+int SelectForReceive(SOCKET sock);
+
 // Receive data over a TCP socket
-int ReceiveData(SOCKET sock, char* buffer, int bufferLength);
+int ReceiveData(SOCKET sock, char* buffer);
+
+// Calls select until ready for sending
+int SelectForSend(SOCKET sock);
 
 // Send data over a TCP socket
-int SendData(SOCKET sock, const char* data, int length);
+int SendData(SOCKET sock, const char* buffer);
+int SendData(SOCKET sock, const char* buffer, int length);
 
 // Close a soket (cleans up Winsock if needed)
 int CloseSocket(SOCKET sock);
