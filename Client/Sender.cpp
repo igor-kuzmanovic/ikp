@@ -2,7 +2,7 @@
 
 DWORD WINAPI StartSender(LPVOID lpParam) {
     // Socket used for communicating with server
-    Connection connection = *(Connection*)lpParam;
+    SOCKET sock = *(SOCKET *)lpParam;
 
     // Variable used to store function return value
     int iResult = 0;
@@ -20,9 +20,9 @@ DWORD WINAPI StartSender(LPVOID lpParam) {
         Sleep(1000);
 
         // Send an prepared message with null terminator included
-        iResult = SendData(&connection, messageToSend, (int)strlen(messageToSend) + 1);
+        iResult = SendData(sock, messageToSend, (int)strlen(messageToSend) + 1);
         if (iResult == SOCKET_ERROR) {
-            CloseConnection(&connection);
+            CloseSocket(sock);
             WSACleanup();
 
             return 1;

@@ -5,8 +5,7 @@ int main() {
     int iResult;
 
     // Socket used for communicating with server
-    Connection connection;
-    InitializeConnection(&connection);
+    SOCKET sock;
 
     // Initialize Winsock
     iResult = InitializeWindowsSockets();
@@ -15,9 +14,9 @@ int main() {
     }
 
     // Setup a TCP connecting socket
-    iResult = CreateClientSocket(&connection, SERVER_ADDRESS, SERVER_PORT);
-    if (iResult != 0) {
-        CloseConnection(&connection);
+    sock = CreateConnectSocket(SERVER_ADDRESS, SERVER_PORT);
+    if (sock == INVALID_SOCKET) {
+        CloseSocket(sock);
         WSACleanup();
 
         return 1;
@@ -29,12 +28,12 @@ int main() {
     HANDLE threads[2]{};
 
     // Starts periodically sending requests to the server in a new thread
-    threads[0] = CreateThread(NULL, 0, &StartSender, &connection, NULL, NULL);
+    threads[0] = CreateThread(NULL, 0, &StartSender, &sock, NULL, NULL);
     if (threads[0] == NULL) {
         PrintError("CreateThread failed with error: %d.", GetLastError());
 
-        // Close the connection
-        CloseConnection(&connection);
+        // Close the socket
+        CloseSocket(sock);
 
         // Cleanup Winsock
         WSACleanup();
@@ -43,15 +42,15 @@ int main() {
     }
 
     // Starts receiving responses from the server in a new thread
-    threads[1] = CreateThread(NULL, 0, &StartReceiver, &connection, NULL, NULL);
+    threads[1] = CreateThread(NULL, 0, &StartReceiver, &sock, NULL, NULL);
     if (threads[1] == NULL) {
         PrintError("CreateThread failed with error: %d.", GetLastError());
 
         // Close sender handle
         CloseHandle(threads[0]);
 
-        // Close the connection
-        CloseConnection(&connection);
+        // Close the socket
+        CloseSocket(sock);
 
         // Cleanup Winsock
         WSACleanup();
@@ -63,10 +62,10 @@ int main() {
     WaitForMultipleObjects(2, threads, TRUE, INFINITE);
 
     // Send shutdown to the server
-    ShutdownClient(&connection);
+    ShutdownConnectSocket(sock);
 
-    // Close the connection to the server
-    CloseConnection(&connection);
+    // Close the sock
+    CloseSocket(sock);
 
     // Close the thread handles
     CloseHandle(threads[0]);

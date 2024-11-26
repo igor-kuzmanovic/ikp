@@ -22,42 +22,34 @@
 
 // API
 
-// Structures
-
-// Define a structure for easier management of sockets and addresses
-typedef struct {
-    SOCKET socket;
-    struct sockaddr_in address;
-} Connection;
-
 // Functions
-
-// Initialize a Connection structure
-void InitializeConnection(Connection* connection);
 
 // Initialize Winsock
 int InitializeWindowsSockets();
 
 // Create and bind a TCP socket to a specific port
-int CreateServerSocket(Connection* connection, const char* port);
+SOCKET CreateListenSocket(const char* port);
 
-// Create a TCP client socket and connect to the server
-int CreateClientSocket(Connection* connection, const char* ipAddress, const char* port);
+// Create a TCP connect socket and connect to the server
+SOCKET CreateConnectSocket(const char* ipAddress, const char* port);
 
-// Accept an incoming client connection
-int AcceptConnection(Connection* serverConnection, Connection* clientConnection);
+// Accept an incoming client
+SOCKET AcceptSocket(SOCKET serverSock);
 
-// Receive data over a TCP connection
-int ReceiveData(Connection* connection, char* buffer, int bufferLength);
+// Sets the socket into non-blocking mode
+int SetSocketNonBlocking(SOCKET sock);
 
-// Send data over a TCP connection
-int SendData(Connection* connection, const char* data, int length);
+// Receive data over a TCP socket
+int ReceiveData(SOCKET sock, char* buffer, int bufferLength);
 
-// Close a connection (cleans up Winsock if needed)
-void CloseConnection(Connection* connection);
+// Send data over a TCP socket
+int SendData(SOCKET sock, const char* data, int length);
+
+// Close a soket (cleans up Winsock if needed)
+int CloseSocket(SOCKET sock);
 
 // Shuts down a server
-void ShutdownServer(Connection* serverConnection, Connection clientConnections[], int clientCount);
+void ShutdownListenSocket(SOCKET serverSock, SOCKET connectSocks[], int connectSocketCount);
 
 // Shuts down a client
-void ShutdownClient(Connection* clientConnection);
+void ShutdownConnectSocket(SOCKET connectSock);
