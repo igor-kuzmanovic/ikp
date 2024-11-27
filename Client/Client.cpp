@@ -1,26 +1,20 @@
 #include "Client.h"
 
 int main() {
-    // Variable used to store function return value
-    int iResult;
+    PrintDebug("Client started.");
 
-    // Socket used for communicating with server
-    SOCKET sock;
+    int iResult;
 
     // Initialize Winsock
     iResult = InitializeWindowsSockets();
     if (iResult != 0) {
-        return 1;
+        PrintError("'WSAStartup' failed with error %d.", WSAGetLastError());
+
+        return EXIT_FAILURE;
     }
 
-    // Setup a TCP connecting socket
-    sock = CreateConnectSocket(SERVER_ADDRESS, SERVER_PORT);
-    if (sock == INVALID_SOCKET) {
-        CloseSocket(sock);
-        WSACleanup();
-
-        return 1;
-    }
+    // Socket used for communicating with server
+    SOCKET sock = INVALID_SOCKET;
 
     PrintInfo("Client connect socket is ready.");
 
@@ -33,12 +27,12 @@ int main() {
         PrintError("CreateThread failed with error: %d.", GetLastError());
 
         // Close the socket
-        CloseSocket(sock);
+        // close socket...
 
         // Cleanup Winsock
         WSACleanup();
 
-        return 1;
+        return EXIT_FAILURE;
     }
 
     // Starts receiving responses from the server in a new thread
@@ -50,22 +44,22 @@ int main() {
         CloseHandle(threads[0]);
 
         // Close the socket
-        CloseSocket(sock);
+        // close socket...
 
         // Cleanup Winsock
         WSACleanup();
 
-        return 1;
+        return EXIT_FAILURE;
     }
 
     // Shuts down the program when all the messages have been processed
     WaitForMultipleObjects(2, threads, TRUE, INFINITE);
 
     // Send shutdown to the server
-    ShutdownConnectSocket(sock);
+    // shutdown socket...
 
     // Close the sock
-    CloseSocket(sock);
+    // close socket...
 
     // Close the thread handles
     CloseHandle(threads[0]);
@@ -74,7 +68,11 @@ int main() {
     // Cleanup Winsock
     WSACleanup();
 
+    PrintDebug("Client stopped.");
+
+    PrintInfo("Press any key to exit.");
+
     int _ = getchar(); // Wait for key press
 
-    return 0;
+    return EXIT_SUCCESS;
 }

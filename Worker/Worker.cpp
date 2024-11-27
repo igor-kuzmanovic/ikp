@@ -1,9 +1,15 @@
 #include "Worker.h"
 
 int main(void) {
-    PrintInfo("Worker started.");
+    PrintDebug("Worker started.");
+
+    int iResult;
+
+    PrintDebug("Worker stopped.");
+
+    PrintInfo("Press any key to exit.");
 
     int _ = getchar(); // Wait for key press
 
-    return 0;
+    return EXIT_SUCCESS;
 }
