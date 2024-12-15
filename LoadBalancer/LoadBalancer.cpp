@@ -122,7 +122,7 @@ int main(void) {
     // An index to keep track of the accepted sockets
     int i = 0;
 
-    while(true) {
+    while (true) {
         // Check stop signal
         if (GetFinishFlag(&ctx)) {
             PrintInfo("Stop signal received, stopping accepting new clients.");
@@ -133,7 +133,7 @@ int main(void) {
         // Accept a client socket
         SOCKET clientSocket = accept(ctx.listenSocket, NULL, NULL);
         if (clientSocket == INVALID_SOCKET) {
-            if (WSAGetLastError() != WSAEWOULDBLOCK) { 
+            if (WSAGetLastError() != WSAEWOULDBLOCK) {
                 // Ignore non-blocking "no connection" errors
                 PrintError("'accept' failed with error: %d.", WSAGetLastError());
             }
