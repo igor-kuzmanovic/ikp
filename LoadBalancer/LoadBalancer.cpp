@@ -14,14 +14,13 @@ int main(void) {
         return EXIT_FAILURE;
     }
 
-    // Socket used for listening for new clients 
-    SOCKET listenSocket = INVALID_SOCKET;
+    // Initialize a shared context
+    LoadBalancerContext ctx{};
+    PrintDebug("Initializing a shared context.");
+    LoadBalancerContextInitialize(&ctx);
 
     // Socket used for communication with client
-    SOCKET acceptedSockets[4] = { INVALID_SOCKET, INVALID_SOCKET, INVALID_SOCKET, INVALID_SOCKET };
-
-    // Buffer used for storing incoming data
-    char receiveBuffer[BUFFER_SIZE]{};
+    SOCKET clientSocket = INVALID_SOCKET;
 
     // Prepare address information structures
     addrinfo* resultingAddress = NULL;
@@ -39,6 +38,9 @@ int main(void) {
     if (iResult != 0) {
         PrintCritical("'getaddrinfo' failed with error: %d.", iResult);
 
+        // Cleanup the context
+        LoadBalancerContextCleanup(&ctx);
+
         // Cleanup Winsock
         WSACleanup();
 
@@ -47,12 +49,15 @@ int main(void) {
 
     // Create a socket for the server to listen for client connections
     PrintDebug("Creating the listen socket.");
-    listenSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    if (listenSocket == INVALID_SOCKET) {
+    ctx.listenSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if (ctx.listenSocket == INVALID_SOCKET) {
         PrintCritical("'socket' failed with error: %d.", WSAGetLastError());
 
         // Free address information
         freeaddrinfo(resultingAddress);
+
+        // Cleanup the context
+        LoadBalancerContextCleanup(&ctx);
 
         // Cleanup Winsock
         WSACleanup();
@@ -62,15 +67,18 @@ int main(void) {
 
     // Setup the TCP listening socket - bind port number and local address to socket
     PrintDebug("Binding the listen socket.");
-    iResult = bind(listenSocket, resultingAddress->ai_addr, (int)resultingAddress->ai_addrlen);
+    iResult = bind(ctx.listenSocket, resultingAddress->ai_addr, (int)resultingAddress->ai_addrlen);
     if (iResult == SOCKET_ERROR) {
         PrintCritical("'bind' failed with error: %d.", WSAGetLastError());
 
         // Close the listen socket
-        closesocket(listenSocket);
+        closesocket(ctx.listenSocket);
 
         // Free address information
         freeaddrinfo(resultingAddress);
+
+        // Cleanup the context
+        LoadBalancerContextCleanup(&ctx);
 
         // Cleanup Winsock
         WSACleanup();
@@ -83,12 +91,51 @@ int main(void) {
 
     // Set listenSocket in listening mode
     PrintDebug("Setting the listen socket in listening mode.");
-    iResult = listen(listenSocket, SOMAXCONN);
+    iResult = listen(ctx.listenSocket, SOMAXCONN);
     if (iResult == SOCKET_ERROR) {
         PrintCritical("'listen' failed with error: %d.", WSAGetLastError());
 
         // Close the listen socket
-        closesocket(listenSocket);
+        closesocket(ctx.listenSocket);
+
+        // Cleanup the context
+        LoadBalancerContextCleanup(&ctx);
+
+        // Cleanup Winsock
+        WSACleanup();
+
+        return EXIT_FAILURE;
+    }
+
+    // Set listening socket to non-blocking mode
+    u_long mode = 1;
+    PrintDebug("Setting the listen socket to non-blocking mode.");
+    iResult = ioctlsocket(ctx.listenSocket, FIONBIO, &mode);
+    if (iResult == SOCKET_ERROR) {
+        PrintCritical("'ioctlsocket' failed with error: %d.", WSAGetLastError());
+
+        // Close the listen socket
+        closesocket(ctx.listenSocket);
+
+        // Cleanup the context
+        LoadBalancerContextCleanup(&ctx);
+
+        // Cleanup Winsock
+        WSACleanup();
+
+        return EXIT_FAILURE;
+    }
+
+    // Start input handler thread
+    HANDLE inputThread = CreateThread(NULL, 0, InputHandlerThread, &ctx, 0, NULL);
+    if (inputThread == NULL) {
+        PrintCritical("'CreateThread' failed with error: %d.", GetLastError());
+
+        // Close the listen socket
+        closesocket(ctx.listenSocket);
+
+        // Cleanup the context
+        LoadBalancerContextCleanup(&ctx);
 
         // Cleanup Winsock
         WSACleanup();
@@ -101,119 +148,106 @@ int main(void) {
     // An index to keep track of the accepted sockets
     int i = 0;
 
-    // A variable to store the result of recv
-    int recvResult = 0;
+    while(true) {
+        // Check stop signal
+        if (ctx.stopServer) {
+            PrintInfo("Stop signal received.");
 
-    // A variable to store the result of send
-    int sendResult = 0;
-
-    do {
-        // Wait for clients and accept client connections
-        PrintDebug("Waiting for a client to connect.");
-        acceptedSockets[i] = accept(listenSocket, NULL, NULL);
-        if (acceptedSockets[i] == INVALID_SOCKET) {
-            PrintError("'accept' failed with error: %d.", WSAGetLastError());
-
-            continue;
+            break;
         }
 
-        do {
-            // Receive data until the client shuts down the connection
-            PrintDebug("Waiting for a message from the client %d.", i);
-            recvResult = recv(acceptedSockets[i], receiveBuffer, BUFFER_SIZE, 0);
-            if (recvResult > 0) {
-                PrintInfo("Message received from a client %d: '%s' with length %d.", i, receiveBuffer, recvResult);
-            } else if (recvResult == 0) {
-                // Connection was closed gracefully
-                PrintInfo("Connection with client closed.");
+        // Accept a client socket
+        clientSocket = accept(ctx.listenSocket, NULL, NULL);
+        if (clientSocket == INVALID_SOCKET) {
+            if (WSAGetLastError() != WSAEWOULDBLOCK) { 
+                // Ignore non-blocking "no connection" errors
+                PrintError("'accept' failed with error: %d.", WSAGetLastError());
+            }
+        } else {
+            PrintInfo("New client connected.");
+            if (ctx.clientCount < MAX_CLIENTS) {
+                // Create a structure to pass to the client thread
+                PrintDebug("Creating a new client handler thread data structure.");
+                ClientHandlerThreadData* threadData = (ClientHandlerThreadData*)malloc(sizeof(ClientHandlerThreadData));
+                if (!threadData) {
+                    PrintCritical("Memory allocation failed for thread data.");
 
-                // Close the accepted socket
-                PrintDebug("Closing the accepted socket %d.", i);
-                iResult = closesocket(acceptedSockets[i]);
-                if (iResult == SOCKET_ERROR) {
-                    PrintError("'closesocket' failed with error: %d.", WSAGetLastError());
+                    // Close the listen socket
+                    closesocket(ctx.listenSocket);
 
-                    continue;
+                    // Cleanup the context
+                    LoadBalancerContextCleanup(&ctx);
+
+                    // Cleanup Winsock
+                    WSACleanup();
+
+                    return EXIT_FAILURE;
+                }
+                threadData->clientSocket = clientSocket; // Pass the client socket
+                threadData->ctx = &ctx; // Pass the context pointer
+
+                PrintDebug("Creating a new client handler thread.");
+                ctx.clientThreads[ctx.clientCount] = CreateThread(NULL, 0, ClientHandlerThread, threadData, 0, NULL);
+                if (ctx.clientThreads[ctx.clientCount] == NULL) {
+                    PrintError("'CreateThread' failed with error: %d.", GetLastError());
+
+                    free(threadData);
+                } else {
+                    ctx.clientCount++;
                 }
             } else {
-                // There was an error during recv
-                PrintError("'recv' failed with error: %d.", WSAGetLastError());
+                PrintWarning("Maximum client limit reached. Rejecting client.");
 
-                // Close the accepted socket
-                PrintDebug("Closing the accepted socket %d.", i);
-                iResult = closesocket(acceptedSockets[i]);
-                if (iResult == SOCKET_ERROR) {
-                    PrintError("'closesocket' failed with error: %d.", WSAGetLastError());
-
-                    continue;
-                }
+                // Close the client socket
+                closesocket(clientSocket);
             }
+        }
 
-            // Message to reply with
-            const char* messageToReply = "this is a test reply";
+        // Cleanup finished threads
+        for (int i = 0; i < ctx.clientCount; i++) {
+            DWORD exitCode;
+            GetExitCodeThread(ctx.clientThreads[i], &exitCode);
+            if (exitCode != STILL_ACTIVE) {
+                PrintDebug("Client handler thread %d has finished.", i);
+                CloseHandle(ctx.clientThreads[i]);
 
-            // Send an message back with null terminator included
-            PrintDebug("Replying to the client %d with: '%s'.", i, messageToReply);
-            sendResult = send(acceptedSockets[i], messageToReply, (int)strlen(messageToReply) + 1, 0);
-            if (sendResult == SOCKET_ERROR) {
-                PrintError("'send' failed with error: %d.", WSAGetLastError());
-
-                continue;
+                ctx.clientThreads[i] = ctx.clientThreads[ctx.clientCount - 1];
+                ctx.clientCount--;
             }
-        } while (recvResult > 0);
-
-        // Increment the index
-        i = (i + 1) % 4;
-    } while (true);
-
-    // Shutdown the connection since we're done
-    for (int i = 0; i < 4; i++) {
-        PrintDebug("Shutting down the accepted socket %d.", i);
-        iResult = shutdown(acceptedSockets[i], SD_BOTH);
-        if (iResult == SOCKET_ERROR) {
-            PrintCritical("'shutdown' failed with error: %d.", WSAGetLastError());
-
-            // Close the accepted socket
-            closesocket(acceptedSockets[i]);
-
-            // Close the listen socket
-            closesocket(listenSocket);
-
-            // Cleanup Winsock
-            WSACleanup();
-
-            return EXIT_FAILURE;
         }
-    }
 
-    // Close the accepted sockets
-    for (int i = 0; i < 4; i++) {
-        PrintDebug("Closing the accepted socket %d.", i);
-        iResult = closesocket(acceptedSockets[i]);
-        if (iResult == SOCKET_ERROR) {
-            PrintCritical("'closesocket' failed with error: %d.", WSAGetLastError());
+        Sleep(10); // Avoid busy waiting
+    };
 
-            // Close the listen socket
-            closesocket(listenSocket);
-
-            // Cleanup Winsock
-            WSACleanup();
-
-            return EXIT_FAILURE;
-        }
+    // Wait for the client handler threads to finish
+    for (int i = 0; i < ctx.clientCount; i++) {
+        WaitForSingleObject(ctx.clientThreads[i], INFINITE);
+        CloseHandle(ctx.clientThreads[i]);
     }
 
     // Close the listen socket
     PrintDebug("Closing the listen socket.");
-    iResult = closesocket(listenSocket);
+    iResult = closesocket(ctx.listenSocket);
     if (iResult == SOCKET_ERROR) {
         PrintCritical("'closesocket' failed with error: %d.", WSAGetLastError());
+
+        // Cleanup the context
+        LoadBalancerContextCleanup(&ctx);
+
+        // Close the input handler thread
+        CloseHandle(inputThread);
 
         // Cleanup Winsock
         WSACleanup();
 
         return EXIT_FAILURE;
     }
+
+    // Cleanup the context
+    LoadBalancerContextCleanup(&ctx);
+
+    // Close the input handler thread
+    CloseHandle(inputThread);
 
     // Cleanup Winsock
     WSACleanup();
@@ -225,4 +259,21 @@ int main(void) {
     int _ = getchar(); // Wait for key press
 
     return EXIT_SUCCESS;
+}
+
+int LoadBalancerContextInitialize(LoadBalancerContext* ctx)
+{
+    ctx->stopServer = false;
+    ctx->listenSocket = INVALID_SOCKET;
+    ctx->clientCount = 0;
+    InitializeCriticalSection(&ctx->lock);
+
+    return 0;
+}
+
+int LoadBalancerContextCleanup(LoadBalancerContext* ctx)
+{
+    DeleteCriticalSection(&ctx->lock);
+
+    return 0;
 }

@@ -8,4 +8,4 @@
 
 // Functions
 
-DWORD WINAPI StartReceiver(LPVOID lpParam);
+DWORD WINAPI InputHandlerThread(LPVOID lpParam);

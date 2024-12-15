@@ -18,10 +18,13 @@
     <ClCompile Include="Client.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Sender.cpp">
+    <ClCompile Include="SenderThread.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Receiver.cpp">
+    <ClCompile Include="ReceiverThread.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="InputHanderThread.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -29,10 +32,13 @@
     <ClInclude Include="Client.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Receiver.h">
+    <ClInclude Include="ReceiverThread.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Sender.h">
+    <ClInclude Include="SenderThread.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="InputHandlerThread.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

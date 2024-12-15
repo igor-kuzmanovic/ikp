@@ -132,13 +132,15 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Client.cpp" />
-    <ClCompile Include="Receiver.cpp" />
-    <ClCompile Include="Sender.cpp" />
+    <ClCompile Include="InputHanderThread.cpp" />
+    <ClCompile Include="ReceiverThread.cpp" />
+    <ClCompile Include="SenderThread.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.h" />
-    <ClInclude Include="Receiver.h" />
-    <ClInclude Include="Sender.h" />
+    <ClInclude Include="InputHandlerThread.h" />
+    <ClInclude Include="ReceiverThread.h" />
+    <ClInclude Include="SenderThread.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Lib\Lib.vcxproj">

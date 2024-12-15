@@ -14,14 +14,35 @@ int main() {
         return EXIT_FAILURE;
     }
 
-    // Socket used for communicating with server
-    SOCKET connectSocket = INVALID_SOCKET;
+    // Initialize a shared context
+    ClientContext ctx{};
+    PrintDebug("Initializing a shared context.");
+    ClientContextInitialize(&ctx);
 
     // Create a socket for the client to connect to the server
     PrintDebug("Creating the connect socket.");
-    connectSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    if (connectSocket == INVALID_SOCKET) {
+    ctx.connectSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if (ctx.connectSocket == INVALID_SOCKET) {
         PrintCritical("'socket' failed with error: %d.", WSAGetLastError());
+
+        // Cleanup Winsock
+        WSACleanup();
+
+        return EXIT_FAILURE;
+    }
+
+    // Set listening socket to non-blocking mode
+    u_long mode = 1;
+    PrintDebug("Setting the listen socket to non-blocking mode.");
+    iResult = ioctlsocket(ctx.connectSocket, FIONBIO, &mode);
+    if (iResult == SOCKET_ERROR) {
+        PrintCritical("'ioctlsocket' failed with error: %d.", WSAGetLastError());
+
+        // Close the listen socket
+        closesocket(ctx.connectSocket);
+
+        // Cleanup the context
+        ClientContextCleanup(&ctx);
 
         // Cleanup Winsock
         WSACleanup();
@@ -37,12 +58,12 @@ int main() {
 
     // Connect to server specified in serverAddress and socket connectSocket
     PrintDebug("Connecting to the server.");
-    iResult = connect(connectSocket, (SOCKADDR*)&serverAddress, sizeof(serverAddress));
+    iResult = connect(ctx.connectSocket, (SOCKADDR*)&serverAddress, sizeof(serverAddress));
     if (iResult == SOCKET_ERROR) {
         PrintCritical("'connect' failed with error: %d.", WSAGetLastError());
 
         // Close the connect socket
-        closesocket(connectSocket);
+        closesocket(ctx.connectSocket);
 
         // Cleanup Winsock
         WSACleanup();
@@ -51,16 +72,16 @@ int main() {
     PrintInfo("Client connect socket is ready.");
 
     // An array to hold the sender and receiver threads
-    HANDLE threads[2]{};
+    HANDLE threads[3]{};
 
     // Starts periodically sending requests to the server in a new thread
     PrintDebug("Starting sender thread.");
-    threads[0] = CreateThread(NULL, 0, &StartSender, &connectSocket, NULL, NULL);
+    threads[0] = CreateThread(NULL, 0, &SenderThread, &ctx, NULL, NULL);
     if (threads[0] == NULL) {
         PrintCritical("'CreateThread' failed with error: %d.", GetLastError());
 
         // Close the connect socket
-        closesocket(connectSocket);
+        closesocket(ctx.connectSocket);
 
         // Cleanup Winsock
         WSACleanup();
@@ -70,7 +91,7 @@ int main() {
 
     // Starts receiving responses from the server in a new thread
     PrintDebug("Starting receiver thread.");
-    threads[1] = CreateThread(NULL, 0, &StartReceiver, &connectSocket, NULL, NULL);
+    threads[1] = CreateThread(NULL, 0, &ReceiverThread, &ctx, NULL, NULL);
     if (threads[1] == NULL) {
         PrintCritical("'CreateThread' failed with error: %d.", GetLastError());
 
@@ -78,7 +99,32 @@ int main() {
         CloseHandle(threads[0]);
 
         // Close the connect socket
-        closesocket(connectSocket);
+        closesocket(ctx.connectSocket);
+
+        // Cleanup the context
+        ClientContextCleanup(&ctx);
+
+        // Cleanup Winsock
+        WSACleanup();
+
+        return EXIT_FAILURE;
+    }
+
+    // Starts handling user input in a new thread
+    PrintDebug("Starting input handler thread.");
+    threads[2] = CreateThread(NULL, 0, &InputHandlerThread, &ctx, NULL, NULL);
+    if (threads[2] == NULL) {
+        PrintCritical("'CreateThread' failed with error: %d.", GetLastError());
+
+        // Close sender and receiver handles
+        CloseHandle(threads[0]);
+        CloseHandle(threads[1]);
+
+        // Close the connect socket
+        closesocket(ctx.connectSocket);
+
+        // Cleanup the context
+        ClientContextCleanup(&ctx);
 
         // Cleanup Winsock
         WSACleanup();
@@ -88,20 +134,23 @@ int main() {
 
     // Shuts down the program when all the messages have been processed
     PrintDebug("Waiting for the threads to finish.");
-    WaitForMultipleObjects(2, threads, TRUE, INFINITE);
+    WaitForMultipleObjects(3, threads, TRUE, INFINITE);
 
     // Send shutdown to the server
     PrintDebug("Shutting down the connection.");
-    iResult = shutdown(connectSocket, SD_BOTH);
+    iResult = shutdown(ctx.connectSocket, SD_BOTH);
     if (iResult == SOCKET_ERROR) {
         PrintCritical("'shutdown' failed with error: %d.", WSAGetLastError());
 
         // Close the connect socket
-        closesocket(connectSocket);
+        closesocket(ctx.connectSocket);
 
         // Close the thread handles
         CloseHandle(threads[0]);
         CloseHandle(threads[1]);
+
+        // Cleanup the context
+        ClientContextCleanup(&ctx);
 
         // Cleanup Winsock
         WSACleanup();
@@ -110,13 +159,16 @@ int main() {
     }
 
     // Close the connect socket
-    iResult = closesocket(connectSocket);
+    iResult = closesocket(ctx.connectSocket);
     if (iResult == SOCKET_ERROR) {
         PrintCritical("'closesocket' failed with error: %d.", WSAGetLastError());
 
         // Close the thread handles
         CloseHandle(threads[0]);
         CloseHandle(threads[1]);
+
+        // Cleanup the context
+        ClientContextCleanup(&ctx);
 
         // Cleanup Winsock
         WSACleanup();
@@ -127,6 +179,10 @@ int main() {
     // Close the thread handles
     CloseHandle(threads[0]);
     CloseHandle(threads[1]);
+    CloseHandle(threads[2]);
+
+    // Cleanup the context
+    ClientContextCleanup(&ctx);
 
     // Cleanup Winsock
     WSACleanup();
@@ -138,4 +194,19 @@ int main() {
     int _ = getchar(); // Wait for key press
 
     return EXIT_SUCCESS;
+}
+
+
+int ClientContextInitialize(ClientContext* ctx) {
+    ctx->stopClient = false;
+    ctx->connectSocket = INVALID_SOCKET;
+    InitializeCriticalSection(&ctx->lock);
+
+    return 0;
+}
+
+int ClientContextCleanup(ClientContext* ctx) {
+    DeleteCriticalSection(&ctx->lock);
+
+    return 0;
 }
