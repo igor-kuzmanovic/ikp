@@ -90,6 +90,7 @@ int main(void) {
 
     // Since we don't need resultingAddress any more, free it
     freeaddrinfo(ctx.resultingAddress);
+    ctx.resultingAddress = NULL;
 
     // Set listenSocket in listening mode
     PrintDebug("Setting the listen socket in listening mode.");
@@ -195,18 +196,6 @@ int main(void) {
     // Wait for the client handler threads to finish
     for (int i = 0; i < ctx.clientCount; i++) {
         WaitForSingleObject(ctx.clientThreads[i], INFINITE);
-    }
-
-    // Close the listen socket
-    PrintDebug("Closing the listen socket.");
-    iResult = closesocket(ctx.listenSocket);
-    if (iResult == SOCKET_ERROR) {
-        PrintCritical("'closesocket' failed with error: %d.", WSAGetLastError());
-
-        // Close everything and cleanup
-        CleanupFull(&ctx, threads, THREAD_COUNT);
-
-        return EXIT_FAILURE;
     }
 
     // Close everything and cleanup

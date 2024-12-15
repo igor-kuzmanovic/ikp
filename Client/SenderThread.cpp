@@ -12,7 +12,7 @@ DWORD WINAPI SenderThread(LPVOID lpParam) {
     while (true) {
         // Wait for the signal to stop the thread
         if (WaitForSingleObject(ctx->finishSignal, 0) == WAIT_OBJECT_0) {
-            PrintInfo("Stop signal received, stopping receiver.");
+            PrintInfo("Stop signal received, stopping sender.");
 
             break;
         }

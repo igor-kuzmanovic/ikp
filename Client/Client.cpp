@@ -58,12 +58,11 @@ int main() {
         return EXIT_FAILURE;
     }
 
-    // Set listening socket to non-blocking mode
-    u_long mode = 1;
-    PrintDebug("Setting the connect socket to non-blocking mode.");
-    iResult = ioctlsocket(ctx.connectSocket, FIONBIO, &mode);
-    if (iResult == SOCKET_ERROR) {
-        PrintCritical("'ioctlsocket' failed with error: %d.", WSAGetLastError());
+    // Create a socket for the client to connect to the server
+    PrintDebug("Creating the connect socket.");
+    ctx.connectSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if (ctx.connectSocket == INVALID_SOCKET) {
+        PrintCritical("'socket' failed with error: %d.", WSAGetLastError());
 
         // Close everything and cleanup
         CleanupFull(&ctx, threads, THREAD_COUNT);
@@ -77,65 +76,63 @@ int main() {
     serverAddress.sin_addr.s_addr = inet_addr(SERVER_ADDRESS);
     serverAddress.sin_port = htons(SERVER_PORT);
 
-    // Connect to server specified in serverAddress and socket connectSocket
-    PrintDebug("Connecting to the server.");
-    iResult = connect(ctx.connectSocket, (SOCKADDR*)&serverAddress, sizeof(serverAddress));
-    if (iResult == SOCKET_ERROR) {
-        if (WSAGetLastError() != WSAEWOULDBLOCK) {
-            PrintCritical("'connect' failed with error: %d.", WSAGetLastError());
+    // Retry logic for connecting to the server
+    int retryCount = 1;
+    while (retryCount < SERVER_CONNECT_MAX_RETRIES) {
+        PrintDebug("Connecting to the server (Attempt %d/%d).", retryCount, SERVER_CONNECT_MAX_RETRIES);
+
+        // Connect to server specified in serverAddress and socket connectSocket
+        iResult = connect(ctx.connectSocket, (SOCKADDR*)&serverAddress, sizeof(serverAddress));
+        if (iResult == SOCKET_ERROR) {
+            int errorCode = WSAGetLastError();
+            if (errorCode == WSAECONNREFUSED) {
+                // Handle connection refused, server might not be up yet
+                PrintError("Connection refused by the server (error %d).", errorCode);
+            } else if (errorCode == WSAETIMEDOUT) {
+                // Handle connection timeout
+                PrintError("Connection attempt timed out (error %d).", errorCode);
+            } else {
+                // Handle other errors
+                PrintError("Failed to connect with error %d.", errorCode);
+            }
+
+            // Increment the retry count
+            retryCount++;
+            if (retryCount <= SERVER_CONNECT_MAX_RETRIES) {
+                // Wait for a short period before retrying (retry interval)
+                PrintDebug("Waiting for %d seconds before retrying...", SERVER_CONNECT_RETRY_INTERVAL);
+
+                Sleep(SERVER_CONNECT_RETRY_INTERVAL);
+            }
+        } else {
+            // Successfully connected
+            PrintInfo("Client connected successfully.");
+
+            break; // Exit the loop on successful connection
+        }
+
+        // If retry limit reached, exit with failure
+        if (retryCount > SERVER_CONNECT_MAX_RETRIES) {
+            PrintCritical("Max connection retries exceeded.");
 
             // Close everything and cleanup
             CleanupFull(&ctx, threads, THREAD_COUNT);
 
             return EXIT_FAILURE;
         }
-
-        PrintDebug("Connection in progress.");
     }
 
-    // Connect to server specified in serverAddress and socket connectSocket
-    int retryCount = 0;
-    while (retryCount < SERVER_CONNECT_MAX_RETRIES) {
-        // Create a set of sockets to check for writability
-        fd_set writeSet{};
-        FD_ZERO(&writeSet);
-        FD_SET(ctx.connectSocket, &writeSet);
-        timeval timeout = { SERVER_CONNECT_TIMEOUT, 0 };  // SERVER_CONNECT_TIMEOUT seconds timeout
+    // Set listening socket to non-blocking mode
+    u_long mode = 1;
+    PrintDebug("Setting the connect socket to non-blocking mode.");
+    iResult = ioctlsocket(ctx.connectSocket, FIONBIO, &mode);
+    if (iResult == SOCKET_ERROR) {
+        PrintCritical("'ioctlsocket' failed with error: %d.", WSAGetLastError());
 
-        // Use select() to wait for the socket to become writable (i.e., connection established)
-        PrintDebug("Waiting for the connection to be established with 5 second timeout.");
-        int selectResult = select(0, NULL, &writeSet, NULL, &timeout);
-        if (selectResult > 0 && FD_ISSET(ctx.connectSocket, &writeSet)) {
-            PrintInfo("Client connected successfully.");
+        // Close everything and cleanup
+        CleanupFull(&ctx, threads, THREAD_COUNT);
 
-            break;
-        }
-
-        if (GetFinishFlag(&ctx)) {
-            PrintInfo("Client stopped before connection was established.");
-
-            // Close everything and cleanup
-            CleanupFull(&ctx, threads, THREAD_COUNT);
-
-            return EXIT_SUCCESS;
-        } else {
-            PrintError("Failed to connect after %d retries (timeout: %d seconds, retry interval: %d seconds).", retryCount, SERVER_CONNECT_TIMEOUT, SERVER_CONNECT_RETRY_INTERVAL);
-
-            // Wait for SERVER_CONNECT_RETRY_INTERVAL seconds before retrying
-            Sleep(SERVER_CONNECT_RETRY_INTERVAL);
-
-            // Increment the retry count
-            retryCount++;
-
-            if (retryCount >= SERVER_CONNECT_MAX_RETRIES) {
-                PrintCritical("Max connection retries exceeded.");
-
-                // Close everything and cleanup
-                CleanupFull(&ctx, threads, THREAD_COUNT);
-
-                return EXIT_FAILURE;
-            }
-        }
+        return EXIT_FAILURE;
     }
 
     // Starts periodically sending requests to the server in a new thread
