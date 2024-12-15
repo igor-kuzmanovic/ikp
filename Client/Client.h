@@ -18,4 +18,4 @@
 #define BUFFER_SIZE 512
 
 #define SERVER_ADDRESS "127.0.0.1"
-#define SERVER_PORT "5059"
+#define SERVER_PORT 5059

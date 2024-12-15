@@ -142,10 +142,12 @@
   <ItemGroup>
     <ClInclude Include="LoggingLib.h" />
     <ClInclude Include="NetworkLib.h" />
+    <ClInclude Include="Protocol.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="LoggingLib.cpp" />
     <ClCompile Include="NetworkLib.cpp" />
+    <ClCompile Include="Protocol.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

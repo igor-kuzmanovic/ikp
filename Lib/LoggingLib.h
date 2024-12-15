@@ -6,17 +6,21 @@
 
 #include <stdio.h>
 #include <stdarg.h>
+#include <time.h>
+#include <sys/timeb.h>
 
 // User-defined constants
 
 // Logging levels
 
-#define LOG_LEVEL_DEBUG   0
-#define LOG_LEVEL_INFO    1
-#define LOG_LEVEL_WARNING 2
-#define LOG_LEVEL_ERROR   3
+#define LOG_LEVEL_DEBUG     0
+#define LOG_LEVEL_INFO      1
+#define LOG_LEVEL_WARNING   2
+#define LOG_LEVEL_ERROR     3
+#define LOG_LEVEL_CRITICAL  4
 
 // Set the default logging level, to override it set define LOG_LEVEL before importing the header
+// This doesn't quite work as expected since Lib is precompiled but might be useful if we change it later
 #ifndef LOG_LEVEL
 #define LOG_LEVEL LOG_LEVEL_DEBUG
 #endif
@@ -36,3 +40,6 @@ void PrintWarning(const char* message, ...);
 
 // Helper function to print error messages
 void PrintError(const char* message, ...);
+
+// Helper function to print critical messages
+void PrintCritical(const char* message, ...);
