@@ -5,7 +5,7 @@ DWORD WINAPI ClientHandlerThread(LPVOID lpParam) {
 
     // Access the socket and context
     SOCKET clientSocket = threadData->clientSocket;
-    LoadBalancerContext* ctx = threadData->ctx;
+    Context* ctx = threadData->ctx;
 
     int iResult;
 
@@ -19,9 +19,9 @@ DWORD WINAPI ClientHandlerThread(LPVOID lpParam) {
     int sendResult = 0;
 
     while (true) {
-        // Check stop signal
-        if (ctx->stopServer) {
-            PrintInfo("Stop signal received.");
+        // Wait for the signal to stop the thread
+        if (WaitForSingleObject(ctx->finishSignal, 0) == WAIT_OBJECT_0) {
+            PrintInfo("Stop signal received, stopping client handler.");
 
             break;
         }
@@ -32,7 +32,7 @@ DWORD WINAPI ClientHandlerThread(LPVOID lpParam) {
             PrintInfo("Message received: '%s' with length %d.", receiveBuffer, recvResult);
 
             // Message to reply with
-            const char* replyMessage = "This is a test reply";
+            const char* replyMessage = "Replying to client";
 
             // Respond to the client
             PrintDebug("Replying to the client.");
@@ -68,13 +68,11 @@ DWORD WINAPI ClientHandlerThread(LPVOID lpParam) {
     }
 
     // Send shutdown notification
-    if (ctx->stopServer) {
-        PrintDebug("Notifying client of server shutdown.");
-        const char* shutdownMessage = "Server is shutting down.";
-        sendResult = send(clientSocket, shutdownMessage, (int)strlen(shutdownMessage) + 1, 0);
-        if (sendResult == SOCKET_ERROR) {
-            PrintError("'send' failed with error: %d.", WSAGetLastError());
-        }
+    PrintDebug("Notifying client of server shutdown.");
+    const char* shutdownMessage = "Server is shutting down.";
+    sendResult = send(clientSocket, shutdownMessage, (int)strlen(shutdownMessage) + 1, 0);
+    if (sendResult == SOCKET_ERROR) {
+        PrintError("'send' failed with error: %d.", WSAGetLastError());
     }
 
     // Close the client socket
@@ -91,6 +89,8 @@ DWORD WINAPI ClientHandlerThread(LPVOID lpParam) {
 
     // Cleanup the thread data
     free(threadData);
+
+    PrintDebug("Client handler stopped.");
 
     return EXIT_SUCCESS;
 }

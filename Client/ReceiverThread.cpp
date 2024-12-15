@@ -3,8 +3,8 @@
 DWORD WINAPI ReceiverThread(LPVOID lpParam) {
     PrintDebug("Receiver started.");
 
-    // Shared context
-    ClientContext* ctx = (ClientContext*)lpParam;
+    // Context
+    Context* ctx = (Context*)lpParam;
 
     // Buffer used for storing incoming data
     char receiveBuffer[BUFFER_SIZE]{};
@@ -13,15 +13,15 @@ DWORD WINAPI ReceiverThread(LPVOID lpParam) {
     int recvResult = 0;
 
     while (true) {
-        // Check stop signal
-        if (ctx->stopClient) {
-            PrintInfo("Stop signal received.");
+        // Wait for the signal to stop the thread
+        if (WaitForSingleObject(ctx->finishSignal, 0) == WAIT_OBJECT_0) {
+            PrintInfo("Stop signal received, stopping receiver.");
 
             break;
         }
 
         // Receive data from server
-        int recvResult = recv(ctx->connectSocket, receiveBuffer, BUFFER_SIZE, 0);
+        recvResult = recv(ctx->connectSocket, receiveBuffer, BUFFER_SIZE, 0);
         if (recvResult > 0) {
             PrintInfo("Reply received: '%s' with length %d.", receiveBuffer, recvResult);
 
@@ -29,10 +29,8 @@ DWORD WINAPI ReceiverThread(LPVOID lpParam) {
             if (strstr(receiveBuffer, "Server is shutting down.") != NULL) {
                 PrintWarning("Server shutdown notification received. Stopping client...");
 
-                // Acquire lock to safely update the stop flag
-                EnterCriticalSection(&ctx->lock);
-                ctx->stopClient = true;
-                LeaveCriticalSection(&ctx->lock);
+                PrintDebug("Setting the finish signal.");
+                SetFinishSignal(ctx);
 
                 break;
             }

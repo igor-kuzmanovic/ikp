@@ -132,11 +132,13 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="ClientHandlerThread.cpp" />
+    <ClCompile Include="Context.cpp" />
     <ClCompile Include="InputHandlerThread.cpp" />
     <ClCompile Include="LoadBalancer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ClientHandlerThread.h" />
+    <ClInclude Include="Context.h" />
     <ClInclude Include="InputHandlerThread.h" />
     <ClInclude Include="LoadBalancer.h" />
   </ItemGroup>

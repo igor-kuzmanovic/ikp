@@ -1,21 +1,19 @@
 #include "InputHandlerThread.h"
 
 DWORD WINAPI InputHandlerThread(LPVOID lpParam) {
-    // Shared context
-    ClientContext* ctx = (ClientContext*)lpParam;
+    // Context
+    Context* ctx = (Context*)lpParam;
 
     PrintInfo("Press 'q' to stop the Client.");
 
     while (true) {
         if (_kbhit()) { // Check if a key is pressed
             char ch = _getch();
-            if (ch == 'q') {
+            if (ch == 'q' || ch == 'Q') {
                 PrintInfo("Shutdown signal received.");
 
-                // Acquire lock to safely update the stop flag
-                EnterCriticalSection(&ctx->lock);
-                ctx->stopClient = true;
-                LeaveCriticalSection(&ctx->lock);
+                PrintDebug("Setting the finish signal.");
+                SetFinishSignal(ctx);
 
                 break;
             }

@@ -132,12 +132,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Client.cpp" />
+    <ClCompile Include="Context.cpp" />
     <ClCompile Include="InputHanderThread.cpp" />
     <ClCompile Include="ReceiverThread.cpp" />
     <ClCompile Include="SenderThread.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.h" />
+    <ClInclude Include="Context.h" />
     <ClInclude Include="InputHandlerThread.h" />
     <ClInclude Include="ReceiverThread.h" />
     <ClInclude Include="SenderThread.h" />
