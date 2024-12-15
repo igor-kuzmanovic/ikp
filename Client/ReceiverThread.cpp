@@ -27,7 +27,7 @@ DWORD WINAPI ReceiverThread(LPVOID lpParam) {
 
             // Check if server is shutting down
             if (strstr(receiveBuffer, "Server is shutting down.") != NULL) {
-                PrintWarning("Server shutdown notification received. Stopping client...");
+                PrintInfo("Server shutdown notification received. Stopping client...");
 
                 PrintDebug("Setting the finish signal.");
                 SetFinishSignal(ctx);

@@ -1,13 +1,9 @@
 #pragma once
 
-// User-defined constants
-
-#define MAX_CLIENTS 4
-
 // User libraries
 
-#include "LoggingLib.h"
-#include "NetworkLib.h"
+#include "SharedLibs.h"
+#include "Config.h"
 
 // API
 
@@ -21,6 +17,7 @@ typedef struct {
     SOCKET listenSocket; // Listen socket
     HANDLE clientThreads[MAX_CLIENTS]; // Handles for client threads
     int clientCount; // Number of active clients
+    addrinfo* resultingAddress; // Resulting address information
 } Context;
 
 // Functions
@@ -33,3 +30,6 @@ int ContextCleanup(Context* ctx);
 
 // Sets the finish signal
 int SetFinishSignal(Context* ctx);
+
+// Gets the finish flag
+bool GetFinishFlag(Context* ctx);

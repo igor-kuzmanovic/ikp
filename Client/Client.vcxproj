@@ -139,10 +139,12 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.h" />
+    <ClInclude Include="Config.h" />
     <ClInclude Include="Context.h" />
     <ClInclude Include="InputHandlerThread.h" />
     <ClInclude Include="ReceiverThread.h" />
     <ClInclude Include="SenderThread.h" />
+    <ClInclude Include="SharedLibs.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Lib\Lib.vcxproj">

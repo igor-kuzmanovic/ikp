@@ -138,9 +138,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ClientHandlerThread.h" />
+    <ClInclude Include="Config.h" />
     <ClInclude Include="Context.h" />
     <ClInclude Include="InputHandlerThread.h" />
     <ClInclude Include="LoadBalancer.h" />
+    <ClInclude Include="SharedLibs.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Lib\Lib.vcxproj">

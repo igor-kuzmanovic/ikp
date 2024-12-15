@@ -2,7 +2,8 @@
 
 // User libraries
 
-#include "Client.h"
+#include "SharedLibs.h"
+#include "Config.h"
 
 // API
 
