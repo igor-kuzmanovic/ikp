@@ -14,10 +14,14 @@ typedef struct {
     CRITICAL_SECTION lock; // Synchronization primitive
     HANDLE finishSignal; // Finish signal
     bool finishFlag; // Stop flag
-    SOCKET listenSocket; // Listen socket
-    HANDLE clientThreads[MAX_CLIENTS]; // Handles for client threads
+    SOCKET clientListenSocket; // Client listen socket
+    SOCKET workerListenSocket; // Worker listen socket
+    HANDLE clientHandlerThreads[MAX_CLIENTS]; // Handles for client threads
+    HANDLE workerHandlerThreads[MAX_WORKERS]; // Handles for worker threads
     int clientCount; // Number of active clients
-    addrinfo* resultingAddress; // Resulting address information
+    int workerCount; // Number of active workers
+    addrinfo* clientConnectionResultingAddress; // Resulting address information for client connections
+    addrinfo* workerConnectionResultingAddress; // Resulting address information for worker connections
 } Context;
 
 // Functions

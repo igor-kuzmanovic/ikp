@@ -53,8 +53,8 @@ int main(void) {
     hints.ai_flags = AI_PASSIVE;     // 
 
     // Resolve the server address and port
-    PrintDebug("Resolving the server address and port.");
-    iResult = getaddrinfo(NULL, SERVER_PORT, &hints, &ctx.resultingAddress);
+    PrintDebug("Resolving the server address and port for worker connections.");
+    iResult = getaddrinfo(NULL, SERVER_WORKER_PORT, &hints, &ctx.workerConnectionResultingAddress);
     if (iResult != 0) {
         PrintCritical("'getaddrinfo' failed with error: %d.", iResult);
 
@@ -64,10 +64,22 @@ int main(void) {
         return EXIT_FAILURE;
     }
 
-    // Create a socket for the server to listen for client connections
-    PrintDebug("Creating the listen socket.");
-    ctx.listenSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    if (ctx.listenSocket == INVALID_SOCKET) {
+    // Resolve the server address and port
+    PrintDebug("Resolving the server address and port for client connections.");
+    iResult = getaddrinfo(NULL, SERVER_CLIENT_PORT, &hints, &ctx.clientConnectionResultingAddress);
+    if (iResult != 0) {
+        PrintCritical("'getaddrinfo' failed with error: %d.", iResult);
+
+        // Close everything and cleanup
+        CleanupFull(&ctx, threads, THREAD_COUNT);
+
+        return EXIT_FAILURE;
+    }
+
+    // Create a socket for the server to listen for worker connections
+    PrintDebug("Creating the listen socket for worker connections.");
+    ctx.workerListenSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if (ctx.workerListenSocket == INVALID_SOCKET) {
         PrintCritical("'socket' failed with error: %d.", WSAGetLastError());
 
         // Close everything and cleanup
@@ -76,9 +88,21 @@ int main(void) {
         return EXIT_FAILURE;
     }
 
-    // Setup the TCP listening socket - bind port number and local address to socket
-    PrintDebug("Binding the listen socket.");
-    iResult = bind(ctx.listenSocket, ctx.resultingAddress->ai_addr, (int)ctx.resultingAddress->ai_addrlen);
+    // Create a socket for the server to listen for client connections
+    PrintDebug("Creating the listen socket for client connections.");
+    ctx.clientListenSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if (ctx.clientListenSocket == INVALID_SOCKET) {
+        PrintCritical("'socket' failed with error: %d.", WSAGetLastError());
+
+        // Close everything and cleanup
+        CleanupFull(&ctx, threads, THREAD_COUNT);
+
+        return EXIT_FAILURE;
+    }
+
+    // Bind the listen socket for worker connections
+    PrintDebug("Binding the listen socket for worker connections.");
+    iResult = bind(ctx.workerListenSocket, ctx.workerConnectionResultingAddress->ai_addr, (int)ctx.workerConnectionResultingAddress->ai_addrlen);
     if (iResult == SOCKET_ERROR) {
         PrintCritical("'bind' failed with error: %d.", WSAGetLastError());
 
@@ -88,13 +112,29 @@ int main(void) {
         return EXIT_FAILURE;
     }
 
-    // Since we don't need resultingAddress any more, free it
-    freeaddrinfo(ctx.resultingAddress);
-    ctx.resultingAddress = NULL;
+    // Bind the listen socket for client connections
+    PrintDebug("Binding the listen socket for client connections.");
+    iResult = bind(ctx.clientListenSocket, ctx.clientConnectionResultingAddress->ai_addr, (int)ctx.clientConnectionResultingAddress->ai_addrlen);
+    if (iResult == SOCKET_ERROR) {
+        PrintCritical("'bind' failed with error: %d.", WSAGetLastError());
 
-    // Set listenSocket in listening mode
-    PrintDebug("Setting the listen socket in listening mode.");
-    iResult = listen(ctx.listenSocket, SOMAXCONN);
+        // Close everything and cleanup
+        CleanupFull(&ctx, threads, THREAD_COUNT);
+
+        return EXIT_FAILURE;
+    }
+
+    // Since we don't need resultingAddress for worker connections anymore, free it
+    freeaddrinfo(ctx.workerConnectionResultingAddress);
+    ctx.workerConnectionResultingAddress = NULL;
+
+    // Since we don't need resultingAddress for client connections anymore, free it
+    freeaddrinfo(ctx.clientConnectionResultingAddress);
+    ctx.clientConnectionResultingAddress = NULL;
+
+    // Set worker listen socket to listening mode
+    PrintDebug("Setting the listen socket for worker connections in listening mode.");
+    iResult = listen(ctx.workerListenSocket, SOMAXCONN);
     if (iResult == SOCKET_ERROR) {
         PrintCritical("'listen' failed with error: %d.", WSAGetLastError());
 
@@ -104,10 +144,22 @@ int main(void) {
         return EXIT_FAILURE;
     }
 
-    // Set listening socket to non-blocking mode
-    u_long mode = 1;
-    PrintDebug("Setting the listen socket to non-blocking mode.");
-    iResult = ioctlsocket(ctx.listenSocket, FIONBIO, &mode);
+    // Set client listen socket to listening mode
+    PrintDebug("Setting the listen socket for client connections in listening mode.");
+    iResult = listen(ctx.clientListenSocket, SOMAXCONN);
+    if (iResult == SOCKET_ERROR) {
+        PrintCritical("'listen' failed with error: %d.", WSAGetLastError());
+
+        // Close everything and cleanup
+        CleanupFull(&ctx, threads, THREAD_COUNT);
+
+        return EXIT_FAILURE;
+    }
+
+    // Set listening socket for worker connections to non-blocking mode
+    u_long socketWorkerMode = 1;
+    PrintDebug("Setting the listen socket for worker connections to non-blocking mode.");
+    iResult = ioctlsocket(ctx.workerListenSocket, FIONBIO, &socketWorkerMode);
     if (iResult == SOCKET_ERROR) {
         PrintCritical("'ioctlsocket' failed with error: %d.", WSAGetLastError());
 
@@ -117,7 +169,20 @@ int main(void) {
         return EXIT_FAILURE;
     }
 
-    PrintInfo("Server initialized, waiting for clients.");
+    // Set listening socket for worker connections to non-blocking mode
+    u_long socketClientMode = 1;
+    PrintDebug("Setting the listen socket for client connections to non-blocking mode.");
+    iResult = ioctlsocket(ctx.clientListenSocket, FIONBIO, &socketClientMode);
+    if (iResult == SOCKET_ERROR) {
+        PrintCritical("'ioctlsocket' failed with error: %d.", WSAGetLastError());
+
+        // Close everything and cleanup
+        CleanupFull(&ctx, threads, THREAD_COUNT);
+
+        return EXIT_FAILURE;
+    }
+
+    PrintInfo("Server initialized, waiting for clients and workers.");
 
     // An index to keep track of the accepted sockets
     int i = 0;
@@ -125,13 +190,58 @@ int main(void) {
     while (true) {
         // Check stop signal
         if (GetFinishFlag(&ctx)) {
-            PrintInfo("Stop signal received, stopping accepting new clients.");
+            PrintInfo("Stop signal received, stopping accepting new clients and workers.");
 
             break;
         }
 
+        // Accept a worker socket
+        SOCKET workerSocket = accept(ctx.workerListenSocket, NULL, NULL);
+        if (workerSocket == INVALID_SOCKET) {
+            if (WSAGetLastError() != WSAEWOULDBLOCK) {
+                // Ignore non-blocking "no connection" errors
+                PrintError("'accept' failed with error: %d.", WSAGetLastError());
+            }
+        } else {
+            PrintInfo("New worker connected.");
+
+            // Create a structure to pass to the worker thread
+            PrintDebug("Creating a new worker handler thread data structure.");
+            WorkerHandlerThreadData* threadData = (WorkerHandlerThreadData*)malloc(sizeof(WorkerHandlerThreadData));
+            if (!threadData) {
+                PrintCritical("Memory allocation failed for worker thread data.");
+
+                // Close everything and cleanup
+                CleanupFull(&ctx, threads, THREAD_COUNT);
+
+                return EXIT_FAILURE;
+            }
+            threadData->ctx = &ctx; // Pass the context pointer
+            threadData->workerSocket = workerSocket; // Initialize the worker socket
+            if (ctx.workerCount < MAX_WORKERS) {
+                PrintDebug("Creating a new worker handler thread.");
+                ctx.workerHandlerThreads[ctx.workerCount] = CreateThread(NULL, 0, WorkerHandlerThread, threadData, 0, NULL);
+                if (ctx.workerHandlerThreads[ctx.workerCount] == NULL) {
+                    PrintError("'CreateThread' failed with error: %d.", GetLastError());
+
+                    // Close the worker socket
+                    closesocket(workerSocket);
+
+                    // Free the thread data memory
+                    free(threadData);
+                } else {
+                    ctx.workerCount++;
+                }
+            } else {
+                PrintWarning("Maximum worker limit reached. Rejecting worker.");
+
+                // Close the worker socket
+                closesocket(workerSocket);
+            }
+        }
+
         // Accept a client socket
-        SOCKET clientSocket = accept(ctx.listenSocket, NULL, NULL);
+        SOCKET clientSocket = accept(ctx.clientListenSocket, NULL, NULL);
         if (clientSocket == INVALID_SOCKET) {
             if (WSAGetLastError() != WSAEWOULDBLOCK) {
                 // Ignore non-blocking "no connection" errors
@@ -155,8 +265,8 @@ int main(void) {
             threadData->clientSocket = clientSocket; // Initialize the client socket
             if (ctx.clientCount < MAX_CLIENTS) {
                 PrintDebug("Creating a new client handler thread.");
-                ctx.clientThreads[ctx.clientCount] = CreateThread(NULL, 0, ClientHandlerThread, threadData, 0, NULL);
-                if (ctx.clientThreads[ctx.clientCount] == NULL) {
+                ctx.clientHandlerThreads[ctx.clientCount] = CreateThread(NULL, 0, ClientHandlerThread, threadData, 0, NULL);
+                if (ctx.clientHandlerThreads[ctx.clientCount] == NULL) {
                     PrintError("'CreateThread' failed with error: %d.", GetLastError());
 
                     // Close the client socket
@@ -175,16 +285,31 @@ int main(void) {
             }
         }
 
-        // Cleanup finished threads
-        for (int i = 0; i < ctx.clientCount; i++) {
+        // Cleanup finished worker handler threads
+        for (int i = 0; i < ctx.workerCount; i++) {
             DWORD exitCode;
-            if (GetExitCodeThread(ctx.clientThreads[i], &exitCode) && exitCode != STILL_ACTIVE) {
-                PrintDebug("Client handler thread %d has finished.", i);
-                CloseHandle(ctx.clientThreads[i]);
+            if (GetExitCodeThread(ctx.workerHandlerThreads[i], &exitCode) && exitCode != STILL_ACTIVE) {
+                PrintDebug("Worker handler thread %d has finished.", i);
+                CloseHandle(ctx.workerHandlerThreads[i]);
 
                 // Shift the last thread into the current slot
-                ctx.clientThreads[i] = ctx.clientThreads[ctx.clientCount - 1];
-                ctx.clientThreads[ctx.clientCount - 1] = NULL;
+                ctx.workerHandlerThreads[i] = ctx.workerHandlerThreads[ctx.workerCount - 1];
+                ctx.workerHandlerThreads[ctx.workerCount - 1] = NULL;
+                ctx.workerCount--;
+                i--; // Recheck the current index
+            }
+        }
+
+        // Cleanup finished client handler threads
+        for (int i = 0; i < ctx.clientCount; i++) {
+            DWORD exitCode;
+            if (GetExitCodeThread(ctx.clientHandlerThreads[i], &exitCode) && exitCode != STILL_ACTIVE) {
+                PrintDebug("Client handler thread %d has finished.", i);
+                CloseHandle(ctx.clientHandlerThreads[i]);
+
+                // Shift the last thread into the current slot
+                ctx.clientHandlerThreads[i] = ctx.clientHandlerThreads[ctx.clientCount - 1];
+                ctx.clientHandlerThreads[ctx.clientCount - 1] = NULL;
                 ctx.clientCount--;
                 i--; // Recheck the current index
             }
@@ -195,7 +320,12 @@ int main(void) {
 
     // Wait for the client handler threads to finish
     for (int i = 0; i < ctx.clientCount; i++) {
-        WaitForSingleObject(ctx.clientThreads[i], INFINITE);
+        WaitForSingleObject(ctx.clientHandlerThreads[i], INFINITE);
+    }
+
+    // Wait for the worker handler threads to finish
+    for (int i = 0; i < ctx.workerCount; i++) {
+        WaitForSingleObject(ctx.workerHandlerThreads[i], INFINITE);
     }
 
     // Close everything and cleanup
@@ -212,19 +342,34 @@ int main(void) {
 
 // Full cleanup helper function
 static void CleanupFull(Context* ctx, HANDLE threads[], int threadCount) {
-    // Close the listen socket
-    if (ctx->listenSocket != INVALID_SOCKET) {
-        // Close the listen socket
-        PrintDebug("Closing the listen socket.");
-        if (closesocket(ctx->listenSocket) == SOCKET_ERROR) {
+    // Close the listen socket for worker connections
+    if (ctx->workerListenSocket != INVALID_SOCKET) {
+        // Close the listen socket for worker connections
+        PrintDebug("Closing the listen socket for worker connections.");
+        if (closesocket(ctx->workerListenSocket) == SOCKET_ERROR) {
             PrintError("'closesocket' failed with error: %d.", WSAGetLastError());
         }
     }
 
-    // Free address information
-    if (ctx->resultingAddress != NULL) {
+    // Close the listen socket for client connections
+    if (ctx->clientListenSocket != INVALID_SOCKET) {
+        // Close the listen socket for client connections
+        PrintDebug("Closing the listen socket for client connections.");
+        if (closesocket(ctx->clientListenSocket) == SOCKET_ERROR) {
+            PrintError("'closesocket' failed with error: %d.", WSAGetLastError());
+        }
+    }
+
+    // Free address information for worker connections
+    if (ctx->workerConnectionResultingAddress != NULL) {
         PrintDebug("Freeing address information.");
-        freeaddrinfo(ctx->resultingAddress);
+        freeaddrinfo(ctx->workerConnectionResultingAddress);
+    }
+
+    // Free address information for client connections
+    if (ctx->clientConnectionResultingAddress != NULL) {
+        PrintDebug("Freeing address information.");
+        freeaddrinfo(ctx->clientConnectionResultingAddress);
     }
 
     // Close the thread handles
@@ -239,8 +384,15 @@ static void CleanupFull(Context* ctx, HANDLE threads[], int threadCount) {
     // Close the client handler thread handles
     for (int i = 0; i < ctx->clientCount; i++) {
         PrintDebug("Closing client handler thread handle %d.", i);
-        CloseHandle(ctx->clientThreads[i]);
-        ctx->clientThreads[i] = NULL;
+        CloseHandle(ctx->clientHandlerThreads[i]);
+        ctx->clientHandlerThreads[i] = NULL;
+    }
+
+    // Close the worker handler thread handles
+    for (int i = 0; i < ctx->workerCount; i++) {
+        PrintDebug("Closing worker handler thread handle %d.", i);
+        CloseHandle(ctx->workerHandlerThreads[i]);
+        ctx->workerHandlerThreads[i] = NULL;
     }
 
     // Cleanup the context

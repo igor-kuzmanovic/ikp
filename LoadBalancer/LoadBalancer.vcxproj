@@ -135,6 +135,7 @@
     <ClCompile Include="Context.cpp" />
     <ClCompile Include="InputHandlerThread.cpp" />
     <ClCompile Include="LoadBalancer.cpp" />
+    <ClCompile Include="WorkerHandlerThread.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ClientHandlerThread.h" />
@@ -143,6 +144,7 @@
     <ClInclude Include="InputHandlerThread.h" />
     <ClInclude Include="LoadBalancer.h" />
     <ClInclude Include="SharedLibs.h" />
+    <ClInclude Include="WorkerHandlerThread.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Lib\Lib.vcxproj">

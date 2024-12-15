@@ -4,7 +4,7 @@ DWORD WINAPI InputHandlerThread(LPVOID lpParam) {
     // Context
     Context* ctx = (Context*)lpParam;
 
-    PrintInfo("Press 'q' to stop the client.");
+    PrintInfo("Press 'q' to stop the worker.");
 
     while (true) {
         if (_kbhit()) { // Check if a key is pressed

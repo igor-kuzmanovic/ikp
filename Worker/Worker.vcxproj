@@ -131,9 +131,19 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Context.cpp" />
+    <ClCompile Include="InputHandlerThread.cpp" />
+    <ClCompile Include="ReceiverThread.cpp" />
+    <ClCompile Include="SenderThread.cpp" />
     <ClCompile Include="Worker.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Config.h" />
+    <ClInclude Include="Context.h" />
+    <ClInclude Include="InputHandlerThread.h" />
+    <ClInclude Include="ReceiverThread.h" />
+    <ClInclude Include="SenderThread.h" />
+    <ClInclude Include="SharedLibs.h" />
     <ClInclude Include="Worker.h" />
   </ItemGroup>
   <ItemGroup>

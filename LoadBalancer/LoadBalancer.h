@@ -7,6 +7,7 @@
 #include "Context.h"
 #include "ClientHandlerThread.h"
 #include "InputHandlerThread.h"
+#include "WorkerHandlerThread.h"
 
 // API
 
