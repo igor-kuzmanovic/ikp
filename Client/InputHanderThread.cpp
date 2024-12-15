@@ -10,12 +10,13 @@ DWORD WINAPI InputHandlerThread(LPVOID lpParam) {
         if (_kbhit()) { // Check if a key is pressed
             char ch = _getch();
             if (ch == 'q') {
-                PrintInfo("Shutdown signal received. Stopping the Client.");
+                PrintInfo("Shutdown signal received.");
 
                 // Acquire lock to safely update the stop flag
                 EnterCriticalSection(&ctx->lock);
                 ctx->stopClient = true;
                 LeaveCriticalSection(&ctx->lock);
+
                 break;
             }
         }

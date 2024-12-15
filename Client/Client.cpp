@@ -88,8 +88,8 @@ int main() {
 
     // Use select() to wait for the socket to become writable (i.e., connection established)
     timeval timeout = { 5, 0 };  // 5 seconds timeout
+    PrintDebug("Waiting for the connection to be established.");
     int selectResult = select(0, NULL, &writeSet, NULL, &timeout);
-
     if (selectResult > 0 && FD_ISSET(ctx.connectSocket, &writeSet)) {
         PrintInfo("Client connected successfully.");
     } else {
@@ -235,7 +235,7 @@ int main() {
 
     PrintInfo("Press any key to exit.");
 
-    int _ = getchar(); // Wait for key press
+    int _ = _getch(); // Wait for key press
 
     return EXIT_SUCCESS;
 }

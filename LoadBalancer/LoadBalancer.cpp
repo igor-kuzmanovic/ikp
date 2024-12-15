@@ -256,7 +256,7 @@ int main(void) {
 
     PrintInfo("Press any key to exit.");
 
-    int _ = getchar(); // Wait for key press
+    int _ = _getch(); // Wait for key press
 
     return EXIT_SUCCESS;
 }
