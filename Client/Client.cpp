@@ -25,6 +25,9 @@ int main() {
     if (ctx.connectSocket == INVALID_SOCKET) {
         PrintCritical("'socket' failed with error: %d.", WSAGetLastError());
 
+        // Cleanup the context
+        ClientContextCleanup(&ctx);
+
         // Cleanup Winsock
         WSACleanup();
 
@@ -33,12 +36,12 @@ int main() {
 
     // Set listening socket to non-blocking mode
     u_long mode = 1;
-    PrintDebug("Setting the listen socket to non-blocking mode.");
+    PrintDebug("Setting the connect socket to non-blocking mode.");
     iResult = ioctlsocket(ctx.connectSocket, FIONBIO, &mode);
     if (iResult == SOCKET_ERROR) {
         PrintCritical("'ioctlsocket' failed with error: %d.", WSAGetLastError());
 
-        // Close the listen socket
+        // Close the connect socket
         closesocket(ctx.connectSocket);
 
         // Cleanup the context
@@ -60,43 +63,37 @@ int main() {
     PrintDebug("Connecting to the server.");
     iResult = connect(ctx.connectSocket, (SOCKADDR*)&serverAddress, sizeof(serverAddress));
     if (iResult == SOCKET_ERROR) {
-        PrintCritical("'connect' failed with error: %d.", WSAGetLastError());
+        if (WSAGetLastError() != WSAEWOULDBLOCK) {
+            PrintCritical("'connect' failed with error: %d.", WSAGetLastError());
 
-        // Close the connect socket
-        closesocket(ctx.connectSocket);
+            // Close the connect socket
+            closesocket(ctx.connectSocket);
 
-        // Cleanup Winsock
-        WSACleanup();
+            // Cleanup the context
+            ClientContextCleanup(&ctx);
+
+            // Cleanup Winsock
+            WSACleanup();
+
+            return EXIT_FAILURE;
+        }
+
+        PrintDebug("Connection in progress.");
     }
 
-    PrintInfo("Client connect socket is ready.");
+    // Create an event to monitor the socket state
+    FD_SET writeSet{};
+    FD_ZERO(&writeSet);
+    FD_SET(ctx.connectSocket, &writeSet);
 
-    // An array to hold the sender and receiver threads
-    HANDLE threads[3]{};
+    // Use select() to wait for the socket to become writable (i.e., connection established)
+    timeval timeout = { 5, 0 };  // 5 seconds timeout
+    int selectResult = select(0, NULL, &writeSet, NULL, &timeout);
 
-    // Starts periodically sending requests to the server in a new thread
-    PrintDebug("Starting sender thread.");
-    threads[0] = CreateThread(NULL, 0, &SenderThread, &ctx, NULL, NULL);
-    if (threads[0] == NULL) {
-        PrintCritical("'CreateThread' failed with error: %d.", GetLastError());
-
-        // Close the connect socket
-        closesocket(ctx.connectSocket);
-
-        // Cleanup Winsock
-        WSACleanup();
-
-        return EXIT_FAILURE;
-    }
-
-    // Starts receiving responses from the server in a new thread
-    PrintDebug("Starting receiver thread.");
-    threads[1] = CreateThread(NULL, 0, &ReceiverThread, &ctx, NULL, NULL);
-    if (threads[1] == NULL) {
-        PrintCritical("'CreateThread' failed with error: %d.", GetLastError());
-
-        // Close sender handle
-        CloseHandle(threads[0]);
+    if (selectResult > 0 && FD_ISSET(ctx.connectSocket, &writeSet)) {
+        PrintInfo("Client connected successfully.");
+    } else {
+        PrintCritical("Failed to connect within timeout.");
 
         // Close the connect socket
         closesocket(ctx.connectSocket);
@@ -112,13 +109,9 @@ int main() {
 
     // Starts handling user input in a new thread
     PrintDebug("Starting input handler thread.");
-    threads[2] = CreateThread(NULL, 0, &InputHandlerThread, &ctx, NULL, NULL);
-    if (threads[2] == NULL) {
+    HANDLE inputHandlerThread = CreateThread(NULL, 0, &InputHandlerThread, &ctx, NULL, NULL);
+    if (inputHandlerThread == NULL) {
         PrintCritical("'CreateThread' failed with error: %d.", GetLastError());
-
-        // Close sender and receiver handles
-        CloseHandle(threads[0]);
-        CloseHandle(threads[1]);
 
         // Close the connect socket
         closesocket(ctx.connectSocket);
@@ -132,8 +125,54 @@ int main() {
         return EXIT_FAILURE;
     }
 
-    // Shuts down the program when all the messages have been processed
+    // Starts periodically sending requests to the server in a new thread
+    PrintDebug("Starting sender thread.");
+    HANDLE senderThread = CreateThread(NULL, 0, &SenderThread, &ctx, NULL, NULL);
+    if (senderThread == NULL) {
+        PrintCritical("'CreateThread' failed with error: %d.", GetLastError());
+
+        // Close the input handler thread
+        CloseHandle(inputHandlerThread);
+
+        // Close the connect socket
+        closesocket(ctx.connectSocket);
+
+        // Cleanup the context
+        ClientContextCleanup(&ctx);
+
+        // Cleanup Winsock
+        WSACleanup();
+
+        return EXIT_FAILURE;
+    }
+
+    // Starts receiving responses from the server in a new thread
+    PrintDebug("Starting receiver thread.");
+    HANDLE receiverThread = CreateThread(NULL, 0, &ReceiverThread, &ctx, NULL, NULL);
+    if (receiverThread == NULL) {
+        PrintCritical("'CreateThread' failed with error: %d.", GetLastError());
+
+        // Close the input handler thread
+        CloseHandle(inputHandlerThread);
+        
+        // Close the sender thread handle
+        CloseHandle(senderThread);
+
+        // Close the connect socket
+        closesocket(ctx.connectSocket);
+
+        // Cleanup the context
+        ClientContextCleanup(&ctx);
+
+        // Cleanup Winsock
+        WSACleanup();
+
+        return EXIT_FAILURE;
+    }
+
+    // Wait for threads to finish
     PrintDebug("Waiting for the threads to finish.");
+    HANDLE threads[3] = { inputHandlerThread, senderThread, receiverThread };
     WaitForMultipleObjects(3, threads, TRUE, INFINITE);
 
     // Send shutdown to the server
@@ -142,12 +181,17 @@ int main() {
     if (iResult == SOCKET_ERROR) {
         PrintCritical("'shutdown' failed with error: %d.", WSAGetLastError());
 
+        // Close the input handler thread
+        CloseHandle(inputHandlerThread);
+
+        // Close the sender thread handle
+        CloseHandle(senderThread);
+
+        // Close the receiver thread handle
+        CloseHandle(receiverThread);
+
         // Close the connect socket
         closesocket(ctx.connectSocket);
-
-        // Close the thread handles
-        CloseHandle(threads[0]);
-        CloseHandle(threads[1]);
 
         // Cleanup the context
         ClientContextCleanup(&ctx);
@@ -157,16 +201,21 @@ int main() {
 
         return EXIT_FAILURE;
     }
+
+    // Close the input handler thread
+    CloseHandle(inputHandlerThread);
+
+    // Close the sender thread handle
+    CloseHandle(senderThread);
+
+    // Close the receiver thread handle
+    CloseHandle(receiverThread);
 
     // Close the connect socket
     iResult = closesocket(ctx.connectSocket);
     if (iResult == SOCKET_ERROR) {
         PrintCritical("'closesocket' failed with error: %d.", WSAGetLastError());
 
-        // Close the thread handles
-        CloseHandle(threads[0]);
-        CloseHandle(threads[1]);
-
         // Cleanup the context
         ClientContextCleanup(&ctx);
 
@@ -175,11 +224,6 @@ int main() {
 
         return EXIT_FAILURE;
     }
-
-    // Close the thread handles
-    CloseHandle(threads[0]);
-    CloseHandle(threads[1]);
-    CloseHandle(threads[2]);
 
     // Cleanup the context
     ClientContextCleanup(&ctx);
@@ -195,7 +239,6 @@ int main() {
 
     return EXIT_SUCCESS;
 }
-
 
 int ClientContextInitialize(ClientContext* ctx) {
     ctx->stopClient = false;

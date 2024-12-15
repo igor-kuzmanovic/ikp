@@ -23,7 +23,7 @@ DWORD WINAPI ReceiverThread(LPVOID lpParam) {
         // Receive data from server
         int recvResult = recv(ctx->connectSocket, receiveBuffer, BUFFER_SIZE, 0);
         if (recvResult > 0) {
-            PrintInfo("Reply received from the server: '%s' with length %d.", receiveBuffer, recvResult);
+            PrintInfo("Reply received: '%s' with length %d.", receiveBuffer, recvResult);
 
             // Check if server is shutting down
             if (strstr(receiveBuffer, "Server is shutting down.") != NULL) {
@@ -41,9 +41,12 @@ DWORD WINAPI ReceiverThread(LPVOID lpParam) {
 
             break;
         } else {
-            PrintError("'recv' failed with error: %d.", WSAGetLastError());
+            if (WSAGetLastError() != WSAEWOULDBLOCK) {
+                // Ignore WSAEWOULDBLOCK, it is not an actual error
+                PrintError("'recv' failed with error: %d.", WSAGetLastError());
 
-            break;
+                break;
+            }
         }
     };
 

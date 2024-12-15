@@ -21,13 +21,20 @@ DWORD WINAPI SenderThread(LPVOID lpParam) {
         const char* message = "Hello from Client!";
         PrintDebug("Sending a message to the server: '%s'.", message);
         sendResult = send(ctx->connectSocket, message, (int)strlen(message) + 1, 0);
-        if (sendResult == SOCKET_ERROR) {
-            PrintCritical("'send' failed with error: %d.", WSAGetLastError());
+        if (sendResult > 0) {
+            PrintInfo("Message sent: '%s' with length %d.", message, sendResult);
+        } else if (sendResult == 0) {
+            PrintInfo("Server disconnected.");
 
-            return EXIT_FAILURE;
+            break;
+        } else {
+            if (WSAGetLastError() != WSAEWOULDBLOCK) {
+                // Ignore WSAEWOULDBLOCK, it is not an actual error
+                PrintError("'send' failed with error: %d.", WSAGetLastError());
+
+                break;
+            }
         }
-
-        PrintInfo("Message sent to the server: '%s' with length %d.", message, sendResult);
 
         Sleep(1000); // Wait for a second
     };

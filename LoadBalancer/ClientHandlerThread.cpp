@@ -32,18 +32,29 @@ DWORD WINAPI ClientHandlerThread(LPVOID lpParam) {
             PrintInfo("Message received: '%s' with length %d.", receiveBuffer, recvResult);
 
             // Message to reply with
-            const char* messageToReply = "This is a test reply";
+            const char* replyMessage = "This is a test reply";
 
             // Respond to the client
             PrintDebug("Replying to the client.");
-            sendResult = send(clientSocket, messageToReply, (int)strlen(messageToReply) + 1, 0);
-            if (sendResult == SOCKET_ERROR) {
-                PrintError("'send' failed with error: %d.", WSAGetLastError());
+            sendResult = send(clientSocket, replyMessage, (int)strlen(replyMessage) + 1, 0);
+            if (sendResult > 0) {
+                PrintInfo("Reply sent: '%s' with length %d.", replyMessage, sendResult);
+            } else if (sendResult == 0) {
+                PrintInfo("Client disconnected.");
 
                 break;
+            } else {
+                if (WSAGetLastError() != WSAEWOULDBLOCK) {
+                    // Ignore WSAEWOULDBLOCK, it is not an actual error
+                    PrintError("'send' failed with error: %d.", WSAGetLastError());
+
+                    break;
+                }
             }
         } else if (recvResult == 0) {
             PrintInfo("Client disconnected.");
+
+            break;
         } else {
             if (WSAGetLastError() != WSAEWOULDBLOCK) {
                 // Ignore WSAEWOULDBLOCK, it is not an actual error

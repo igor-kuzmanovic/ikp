@@ -127,8 +127,8 @@ int main(void) {
     }
 
     // Start input handler thread
-    HANDLE inputThread = CreateThread(NULL, 0, InputHandlerThread, &ctx, 0, NULL);
-    if (inputThread == NULL) {
+    HANDLE inputHandlerThread = CreateThread(NULL, 0, InputHandlerThread, &ctx, 0, NULL);
+    if (inputHandlerThread == NULL) {
         PrintCritical("'CreateThread' failed with error: %d.", GetLastError());
 
         // Close the listen socket
@@ -235,7 +235,7 @@ int main(void) {
         LoadBalancerContextCleanup(&ctx);
 
         // Close the input handler thread
-        CloseHandle(inputThread);
+        CloseHandle(inputHandlerThread);
 
         // Cleanup Winsock
         WSACleanup();
@@ -247,7 +247,7 @@ int main(void) {
     LoadBalancerContextCleanup(&ctx);
 
     // Close the input handler thread
-    CloseHandle(inputThread);
+    CloseHandle(inputHandlerThread);
 
     // Cleanup Winsock
     WSACleanup();
