@@ -22,7 +22,7 @@ typedef struct {
 int ContextInitialize(Context* ctx);
 
 // Cleans up a Context
-int ContextCleanup(Context* ctx);
+int ContextDestroy(Context* ctx);
 
 // Sets the finish signal
 int SetFinishSignal(Context* ctx);

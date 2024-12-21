@@ -163,7 +163,7 @@ int main() {
 
     // Wait for threads to finish
     PrintDebug("Waiting for the threads to finish.");
-    WaitForMultipleObjects(3, threads, TRUE, INFINITE);
+    WaitForMultipleObjects(THREAD_COUNT, threads, TRUE, INFINITE);
 
     // Close everything and cleanup
     CleanupFull(&ctx, threads, THREAD_COUNT);
@@ -205,7 +205,7 @@ static void CleanupFull(Context* ctx, HANDLE threads[], int threadCount) {
 
     // Cleanup the context
     PrintDebug("Cleaning up the context.");
-    ContextCleanup(ctx);
+    ContextDestroy(ctx);
 
     // Cleanup Winsock
     PrintDebug("Cleaning up Winsock.");

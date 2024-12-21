@@ -7,7 +7,9 @@ int main(void) {
 
     // Threads to be created
     HANDLE inputHandlerThread = NULL;
-    HANDLE threads[THREAD_COUNT] = { NULL };
+    HANDLE workerListenerThread = NULL;
+    HANDLE clientListenerThread = NULL;
+    HANDLE threads[THREAD_COUNT] = { NULL, NULL, NULL };
 
     // Initialize Winsock
     PrintDebug("Initializing Winsock.");
@@ -169,7 +171,7 @@ int main(void) {
         return EXIT_FAILURE;
     }
 
-    // Set listening socket for worker connections to non-blocking mode
+    // Set listening socket for client connections to non-blocking mode
     u_long socketClientMode = 1;
     PrintDebug("Setting the listen socket for client connections to non-blocking mode.");
     iResult = ioctlsocket(ctx.clientListenSocket, FIONBIO, &socketClientMode);
@@ -182,10 +184,33 @@ int main(void) {
         return EXIT_FAILURE;
     }
 
-    PrintInfo("Server initialized, waiting for clients and workers.");
+    // Starts listening for workers in a new thread
+    PrintDebug("Starting worker listener thread.");
+    workerListenerThread = CreateThread(NULL, 0, &WorkerListenerThread, &ctx, NULL, NULL);
+    if (workerListenerThread == NULL) {
+        PrintCritical("'CreateThread' for WorkerListenerThread failed with error: %d.", GetLastError());
 
-    // An index to keep track of the accepted sockets
-    int i = 0;
+        // Close everything and cleanup
+        CleanupFull(&ctx, threads, THREAD_COUNT);
+
+        return EXIT_FAILURE;
+    }
+    threads[1] = workerListenerThread;
+
+    // Starts listening for clients in a new thread
+    PrintDebug("Starting client listener thread.");
+    clientListenerThread = CreateThread(NULL, 0, &ClientListenerThread, &ctx, NULL, NULL);
+    if (clientListenerThread == NULL) {
+        PrintCritical("'CreateThread' for ClientListenerThread failed with error: %d.", GetLastError());
+
+        // Close everything and cleanup
+        CleanupFull(&ctx, threads, THREAD_COUNT);
+
+        return EXIT_FAILURE;
+    }
+    threads[2] = clientListenerThread;
+
+    PrintInfo("Server initialized, waiting for clients and workers.");
 
     while (true) {
         // Check stop signal
@@ -193,96 +218,6 @@ int main(void) {
             PrintInfo("Stop signal received, stopping accepting new clients and workers.");
 
             break;
-        }
-
-        // Accept a worker socket
-        SOCKET workerSocket = accept(ctx.workerListenSocket, NULL, NULL);
-        if (workerSocket == INVALID_SOCKET) {
-            if (WSAGetLastError() != WSAEWOULDBLOCK) {
-                // Ignore non-blocking "no connection" errors
-                PrintError("'accept' failed with error: %d.", WSAGetLastError());
-            }
-        } else {
-            PrintInfo("New worker connected.");
-
-            // Create a structure to pass to the worker thread
-            PrintDebug("Creating a new worker handler thread data structure.");
-            WorkerHandlerThreadData* threadData = (WorkerHandlerThreadData*)malloc(sizeof(WorkerHandlerThreadData));
-            if (!threadData) {
-                PrintCritical("Memory allocation failed for worker thread data.");
-
-                // Close everything and cleanup
-                CleanupFull(&ctx, threads, THREAD_COUNT);
-
-                return EXIT_FAILURE;
-            }
-            threadData->ctx = &ctx; // Pass the context pointer
-            threadData->workerSocket = workerSocket; // Initialize the worker socket
-            if (ctx.workerCount < MAX_WORKERS) {
-                PrintDebug("Creating a new worker handler thread.");
-                ctx.workerHandlerThreads[ctx.workerCount] = CreateThread(NULL, 0, WorkerHandlerThread, threadData, 0, NULL);
-                if (ctx.workerHandlerThreads[ctx.workerCount] == NULL) {
-                    PrintError("'CreateThread' failed with error: %d.", GetLastError());
-
-                    // Close the worker socket
-                    closesocket(workerSocket);
-
-                    // Free the thread data memory
-                    free(threadData);
-                } else {
-                    ctx.workerCount++;
-                }
-            } else {
-                PrintWarning("Maximum worker limit reached. Rejecting worker.");
-
-                // Close the worker socket
-                closesocket(workerSocket);
-            }
-        }
-
-        // Accept a client socket
-        SOCKET clientSocket = accept(ctx.clientListenSocket, NULL, NULL);
-        if (clientSocket == INVALID_SOCKET) {
-            if (WSAGetLastError() != WSAEWOULDBLOCK) {
-                // Ignore non-blocking "no connection" errors
-                PrintError("'accept' failed with error: %d.", WSAGetLastError());
-            }
-        } else {
-            PrintInfo("New client connected.");
-
-            // Create a structure to pass to the client thread
-            PrintDebug("Creating a new client handler thread data structure.");
-            ClientHandlerThreadData* threadData = (ClientHandlerThreadData*)malloc(sizeof(ClientHandlerThreadData));
-            if (!threadData) {
-                PrintCritical("Memory allocation failed for thread data.");
-
-                // Close everything and cleanup
-                CleanupFull(&ctx, threads, THREAD_COUNT);
-
-                return EXIT_FAILURE;
-            }
-            threadData->ctx = &ctx; // Pass the context pointer
-            threadData->clientSocket = clientSocket; // Initialize the client socket
-            if (ctx.clientCount < MAX_CLIENTS) {
-                PrintDebug("Creating a new client handler thread.");
-                ctx.clientHandlerThreads[ctx.clientCount] = CreateThread(NULL, 0, ClientHandlerThread, threadData, 0, NULL);
-                if (ctx.clientHandlerThreads[ctx.clientCount] == NULL) {
-                    PrintError("'CreateThread' failed with error: %d.", GetLastError());
-
-                    // Close the client socket
-                    closesocket(clientSocket);
-
-                    // Free the thread data memory
-                    free(threadData);
-                } else {
-                    ctx.clientCount++;
-                }
-            } else {
-                PrintWarning("Maximum client limit reached. Rejecting client.");
-
-                // Close the client socket
-                closesocket(clientSocket);
-            }
         }
 
         // Cleanup finished worker handler threads
@@ -319,14 +254,16 @@ int main(void) {
     };
 
     // Wait for the client handler threads to finish
-    for (int i = 0; i < ctx.clientCount; i++) {
-        WaitForSingleObject(ctx.clientHandlerThreads[i], INFINITE);
-    }
+    PrintDebug("Waiting for the client threads to finish.");
+    WaitForMultipleObjects(ctx.clientCount, ctx.clientHandlerThreads, TRUE, INFINITE);
 
     // Wait for the worker handler threads to finish
-    for (int i = 0; i < ctx.workerCount; i++) {
-        WaitForSingleObject(ctx.workerHandlerThreads[i], INFINITE);
-    }
+    PrintDebug("Waiting for the worker threads to finish.");
+    WaitForMultipleObjects(ctx.workerCount, ctx.workerHandlerThreads, TRUE, INFINITE);
+
+    // Wait for threads to finish
+    PrintDebug("Waiting for the threads to finish.");
+    WaitForMultipleObjects(THREAD_COUNT, threads, TRUE, INFINITE);
 
     // Close everything and cleanup
     CleanupFull(&ctx, threads, THREAD_COUNT);
@@ -397,7 +334,7 @@ static void CleanupFull(Context* ctx, HANDLE threads[], int threadCount) {
 
     // Cleanup the context
     PrintDebug("Cleaning up the context.");
-    ContextCleanup(ctx);
+    ContextDestroy(ctx);
 
     // Cleanup Winsock
     PrintDebug("Cleaning up Winsock.");

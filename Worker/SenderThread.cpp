@@ -34,6 +34,10 @@ DWORD WINAPI SenderThread(LPVOID lpParam) {
 
                 break;
             }
+
+            Sleep(10); // Avoid busy waiting
+
+            continue;
         }
 
         Sleep(1000); // Wait for a second
@@ -41,5 +45,5 @@ DWORD WINAPI SenderThread(LPVOID lpParam) {
 
     PrintDebug("Sender stopped.");
 
-    return EXIT_SUCCESS;
+    return TRUE;
 }

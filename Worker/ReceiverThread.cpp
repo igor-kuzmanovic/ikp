@@ -45,10 +45,14 @@ DWORD WINAPI ReceiverThread(LPVOID lpParam) {
 
                 break;
             }
+
+            Sleep(10); // Avoid busy waiting
+
+            continue;
         }
     };
 
     PrintDebug("Receiver stopped.");
 
-    return EXIT_SUCCESS;
+    return TRUE;
 }

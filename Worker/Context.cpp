@@ -4,7 +4,7 @@ int ContextInitialize(Context* ctx) {
     InitializeCriticalSection(&ctx->lock);
     ctx->finishSignal = CreateSemaphore(0, 0, THREAD_COUNT, NULL);
     if (ctx->finishSignal == NULL) {
-        return -1;
+        return GetLastError();
     }
     ctx->finishFlag = false;
     ctx->connectSocket = INVALID_SOCKET;
@@ -12,7 +12,7 @@ int ContextInitialize(Context* ctx) {
     return 0;
 }
 
-int ContextCleanup(Context* ctx) {
+int ContextDestroy(Context* ctx) {
     ctx->connectSocket = INVALID_SOCKET;
     if (ctx->finishSignal != NULL) {
         CloseHandle(ctx->finishSignal);
@@ -27,6 +27,7 @@ int ContextCleanup(Context* ctx) {
 int SetFinishSignal(Context* ctx) {
     EnterCriticalSection(&ctx->lock);
 
+    // TODO Should we track the number of active threads?
     ReleaseSemaphore(ctx->finishSignal, THREAD_COUNT, NULL);
     ctx->finishFlag = true;
 

@@ -1,13 +1,14 @@
-#include "ClientHandlerThread.h"
+#include "ClientDataReceiverThread.h"
 
-DWORD WINAPI ClientHandlerThread(LPVOID lpParam) {
-    PrintDebug("Client handler started.");
+DWORD WINAPI ClientDataReceiverThread(LPVOID lpParam) {
+    PrintDebug("Client data receiver started.");
 
-    ClientHandlerThreadData* threadData = (ClientHandlerThreadData*)lpParam;
+    ClientDataReceiverThreadData* threadData = (ClientDataReceiverThreadData*)lpParam;
 
-    // Access the socket and context
+    // Access the socket, context and thread pool
     SOCKET clientSocket = threadData->clientSocket;
     Context* ctx = threadData->ctx;
+    int threadIndex = threadData->threadIndex;
 
     int iResult;
 
@@ -23,7 +24,7 @@ DWORD WINAPI ClientHandlerThread(LPVOID lpParam) {
     while (true) {
         // Wait for the signal to stop the thread
         if (WaitForSingleObject(ctx->finishSignal, 0) == WAIT_OBJECT_0) {
-            PrintInfo("Stop signal received, stopping client handler.");
+            PrintInfo("Stop signal received, stopping client data receiver.");
 
             break;
         }
@@ -33,30 +34,7 @@ DWORD WINAPI ClientHandlerThread(LPVOID lpParam) {
         if (recvResult > 0) {
             PrintInfo("Message received: '%s' with length %d.", receiveBuffer, recvResult);
 
-            // Message to reply with
-            const char* replyMessage = "Replying to client";
-
-            // Respond to the client
-            PrintDebug("Replying to the client.");
-            sendResult = send(clientSocket, replyMessage, (int)strlen(replyMessage) + 1, 0);
-            if (sendResult > 0) {
-                PrintInfo("Reply sent: '%s' with length %d.", replyMessage, sendResult);
-            } else if (sendResult == 0) {
-                PrintInfo("Client disconnected.");
-
-                break;
-            } else {
-                if (WSAGetLastError() != WSAEWOULDBLOCK) {
-                    // Ignore WSAEWOULDBLOCK, it is not an actual error
-                    PrintError("'send' failed with error: %d.", WSAGetLastError());
-
-                    break;
-                }
-
-                Sleep(10); // Avoid busy waiting
-
-                continue;
-            }
+            // TODO Enqueue the received data
         } else if (recvResult == 0) {
             PrintInfo("Client disconnected.");
 
@@ -88,17 +66,12 @@ DWORD WINAPI ClientHandlerThread(LPVOID lpParam) {
     iResult = closesocket(clientSocket);
     if (iResult == SOCKET_ERROR) {
         PrintError("'closesocket' failed with error: %d.", WSAGetLastError());
-
-        // Cleanup the thread data
-        free(threadData);
-
-        return FALSE;
     }
 
-    // Cleanup the thread data
-    free(threadData);
+    // Return the thread to the pool
+    ReturnClientDataReceiverThread(ctx->clientThreadPool, threadIndex, threadData);
 
-    PrintDebug("Client handler stopped.");
+    PrintDebug("Client data receiver stopped.");
 
     return TRUE;
 }

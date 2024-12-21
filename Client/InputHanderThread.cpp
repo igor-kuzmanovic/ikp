@@ -1,6 +1,8 @@
 #include "InputHandlerThread.h"
 
 DWORD WINAPI InputHandlerThread(LPVOID lpParam) {
+    PrintDebug("Input handler started.");
+
     // Context
     Context* ctx = (Context*)lpParam;
 
@@ -22,5 +24,5 @@ DWORD WINAPI InputHandlerThread(LPVOID lpParam) {
         Sleep(10); // Avoid busy waiting
     }
 
-    return EXIT_SUCCESS;
+    return TRUE;
 }

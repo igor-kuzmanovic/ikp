@@ -1,6 +1,8 @@
 #include "WorkerHandlerThread.h"
 
 DWORD WINAPI WorkerHandlerThread(LPVOID lpParam) {
+    PrintDebug("Worker handler started.");
+
     WorkerHandlerThreadData* threadData = (WorkerHandlerThreadData*)lpParam;
 
     // Access the socket and context
@@ -50,6 +52,10 @@ DWORD WINAPI WorkerHandlerThread(LPVOID lpParam) {
 
                     break;
                 }
+
+                Sleep(10); // Avoid busy waiting
+
+                continue;
             }
         } else if (recvResult == 0) {
             PrintInfo("Worker disconnected.");
@@ -62,9 +68,11 @@ DWORD WINAPI WorkerHandlerThread(LPVOID lpParam) {
 
                 break;
             }
-        }
 
-        Sleep(10); // Avoid busy waiting
+            Sleep(10); // Avoid busy waiting
+
+            continue;
+        }
     }
 
     // Send shutdown notification
@@ -84,7 +92,7 @@ DWORD WINAPI WorkerHandlerThread(LPVOID lpParam) {
         // Cleanup the thread data
         free(threadData);
 
-        return EXIT_FAILURE;
+        return FALSE;
     }
 
     // Cleanup the thread data
@@ -92,5 +100,5 @@ DWORD WINAPI WorkerHandlerThread(LPVOID lpParam) {
 
     PrintDebug("Worker handler stopped.");
 
-    return EXIT_SUCCESS;
+    return TRUE;
 }
