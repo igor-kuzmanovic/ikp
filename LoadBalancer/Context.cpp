@@ -34,10 +34,20 @@ int ContextInitialize(Context* ctx) {
     }
     InitializeClientThreadPool(ctx->clientThreadPool);
 
+    ctx->clientBlockingRequestQueue = (ClientBlockingRequestQueue*)malloc(sizeof(ClientBlockingRequestQueue));
+    if (ctx->clientBlockingRequestQueue == NULL) {
+        return -1;
+    }
+    InitializeClientBlockingRequestQueue(ctx->clientBlockingRequestQueue);
+
     return 0;
 }
 
 int ContextDestroy(Context* ctx) {
+    DestroyClientBlockingRequestQueue(ctx->clientBlockingRequestQueue);
+    free(ctx->clientBlockingRequestQueue);
+    ctx->clientBlockingRequestQueue = NULL;
+
     DestroyClientThreadPool(ctx->clientThreadPool);
     free(ctx->clientThreadPool);
     ctx->clientThreadPool = NULL;

@@ -131,6 +131,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="ClientBlockingRequestQueue.cpp" />
     <ClCompile Include="ClientDataReceiverThread.cpp" />
     <ClCompile Include="ClientHandlerThread.cpp" />
     <ClCompile Include="ClientListenerThread.cpp" />
@@ -145,6 +146,7 @@
     <ClInclude Include="ClientDataReceiverThread.h" />
     <ClInclude Include="ClientHandlerThread.h" />
     <ClInclude Include="ClientListenerThread.h" />
+    <ClInclude Include="ClientBlockingRequestQueue.h" />
     <ClInclude Include="ClientThreadPool.h" />
     <ClInclude Include="Config.h" />
     <ClInclude Include="Context.h" />

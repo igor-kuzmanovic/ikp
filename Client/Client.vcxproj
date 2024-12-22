@@ -136,6 +136,7 @@
     <ClCompile Include="InputHanderThread.cpp" />
     <ClCompile Include="ReceiverThread.cpp" />
     <ClCompile Include="SenderThread.cpp" />
+    <ClCompile Include="SharedLibs.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.h" />

@@ -34,7 +34,19 @@ DWORD WINAPI ClientDataReceiverThread(LPVOID lpParam) {
         if (recvResult > 0) {
             PrintInfo("Message received: '%s' with length %d.", receiveBuffer, recvResult);
 
-            // TODO Enqueue the received data
+            iResult = PutClientBlockingRequestQueue(ctx->clientBlockingRequestQueue, clientSocket, receiveBuffer);
+            if (iResult == -1) {
+                PrintError("Failed to put the request in the client blocking request queue.");
+
+                PrintDebug("Notifying the client that the server is busy.");
+                const char* busyMessage = "Server is busy.";
+                send(clientSocket, busyMessage, (int)strlen(busyMessage) + 1, 0);
+
+                PrintDebug("Sleeping for %d ms before accepting new requests.", CLIENT_BLOCKING_REQUEST_QUEUE_FULL_SLEEP_TIME);
+                Sleep(CLIENT_BLOCKING_REQUEST_QUEUE_FULL_SLEEP_TIME);
+
+                continue;
+            }
         } else if (recvResult == 0) {
             PrintInfo("Client disconnected.");
 
@@ -47,7 +59,7 @@ DWORD WINAPI ClientDataReceiverThread(LPVOID lpParam) {
                 break;
             }
 
-            Sleep(10); // Avoid busy waiting
+            Sleep(BUSY_WAIT_TIME); // Avoid busy waiting
 
             continue;
         }

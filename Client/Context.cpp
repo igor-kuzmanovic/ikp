@@ -45,3 +45,23 @@ bool GetFinishFlag(Context* ctx) {
 
     return flag;
 }
+
+bool GetPauseSender(Context* ctx) {
+    EnterCriticalSection(&ctx->lock);
+
+    bool pause = ctx->pauseSender;
+
+    LeaveCriticalSection(&ctx->lock);
+
+    return pause;
+}
+
+bool SetPauseSender(Context* ctx, bool pause) {
+    EnterCriticalSection(&ctx->lock);
+
+    ctx->pauseSender = pause;
+
+    LeaveCriticalSection(&ctx->lock);
+
+    return true;
+}

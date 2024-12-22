@@ -46,7 +46,7 @@ DWORD WINAPI ReceiverThread(LPVOID lpParam) {
                 break;
             }
 
-            Sleep(10); // Avoid busy waiting
+            Sleep(BUSY_WAIT_TIME); // Avoid busy waiting
 
             continue;
         }

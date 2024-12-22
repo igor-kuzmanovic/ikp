@@ -23,7 +23,7 @@ DWORD WINAPI ClientListenerThread(LPVOID lpParam) {
                 PrintError("'accept' failed with error: %d.", WSAGetLastError());
             }
 
-            Sleep(10); // Avoid busy waiting
+            Sleep(BUSY_WAIT_TIME); // Avoid busy waiting
 
             continue;
         } else {
@@ -48,7 +48,7 @@ DWORD WINAPI ClientListenerThread(LPVOID lpParam) {
             }
         }
 
-        Sleep(10); // Avoid busy waiting
+        Sleep(BUSY_WAIT_TIME); // Avoid busy waiting
     }
 
     PrintDebug("Client listener stopped.");

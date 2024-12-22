@@ -6,8 +6,17 @@ DWORD WINAPI SenderThread(LPVOID lpParam) {
     // Context
     Context* ctx = (Context*)lpParam;
 
+    // Buffer used for storing outgoing data
+    char sendBuffer[BUFFER_SIZE]{};
+
     // Send result
     int sendResult;
+
+    // A variable to exponentially increase the sleep time when server is busy
+    int serverFullSleepTimeMultiplier = 1;
+
+    // Message counter
+    int messageCounter = 0;
 
     while (true) {
         // Wait for the signal to stop the thread
@@ -17,12 +26,27 @@ DWORD WINAPI SenderThread(LPVOID lpParam) {
             break;
         }
 
+        // Check if the sender should pause
+        if (GetPauseSender(ctx)) {
+            // TODO Probably don't need to sleep here since the receiver will sleep
+            PrintDebug("Sleeping for %d ms before sending new requests.", SERVER_FULL_SLEEP_TIME * serverFullSleepTimeMultiplier);
+            Sleep(SERVER_FULL_SLEEP_TIME * serverFullSleepTimeMultiplier);
+
+            PrintDebug("Increasing the sleep time multiplier.");
+            serverFullSleepTimeMultiplier *= 2;
+
+            continue;
+        } else if (serverFullSleepTimeMultiplier != 1) {
+            PrintDebug("Resetting the sleep time multiplier.");
+            serverFullSleepTimeMultiplier = 1;
+        }
+
         // Send an prepared message with null terminator included
-        const char* message = "Hello from Client!";
-        PrintDebug("Sending a message to the server: '%s'.", message);
-        sendResult = send(ctx->connectSocket, message, (int)strlen(message) + 1, 0);
+        GenerateClientMessage(ctx->connectSocket, sendBuffer, BUFFER_SIZE, ++messageCounter);
+        PrintDebug("Sending a message to the server: '%s'.", sendBuffer);
+        sendResult = send(ctx->connectSocket, sendBuffer, (int)strlen(sendBuffer) + 1, 0);
         if (sendResult > 0) {
-            PrintInfo("Message sent: '%s' with length %d.", message, sendResult);
+            PrintInfo("Message sent: '%s' with length %d.", sendBuffer, sendResult);
         } else if (sendResult == 0) {
             PrintInfo("Server disconnected.");
 
@@ -35,12 +59,12 @@ DWORD WINAPI SenderThread(LPVOID lpParam) {
                 break;
             }
 
-            Sleep(10); // Avoid busy waiting
+            Sleep(BUSY_WAIT_TIME); // Avoid busy waiting
 
             continue;
         }
 
-        Sleep(1000); // Wait for a second
+        Sleep(MESSAGE_SEND_WAIT_TIME); // Wait for a second
     };
 
     PrintDebug("Sender stopped.");

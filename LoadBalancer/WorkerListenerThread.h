@@ -3,8 +3,6 @@
 // User libraries
 
 #include "SharedLibs.h"
-#include "Config.h"
-#include "WorkerHandlerThread.h"
 
 // API
 

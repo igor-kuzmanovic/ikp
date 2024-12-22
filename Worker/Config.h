@@ -6,6 +6,8 @@
 
 #define BUFFER_SIZE 512
 
+#define BUSY_WAIT_TIME 10
+
 #define SERVER_CONNECT_MAX_RETRIES 10
 #define SERVER_CONNECT_RETRY_INTERVAL 1000 // milliseconds
 #define SERVER_CONNECT_TIMEOUT 5 // seconds

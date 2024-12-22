@@ -250,7 +250,7 @@ int main(void) {
             }
         }
 
-        Sleep(10); // Avoid busy waiting
+        Sleep(BUSY_WAIT_TIME); // Avoid busy waiting
     };
 
     // Wait for the client handler threads to finish

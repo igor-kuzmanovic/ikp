@@ -23,7 +23,7 @@ DWORD WINAPI WorkerListenerThread(LPVOID lpParam) {
                 PrintError("'accept' failed with error: %d.", WSAGetLastError());
             }
 
-            Sleep(10); // Avoid busy waiting
+            Sleep(BUSY_WAIT_TIME); // Avoid busy waiting
 
             continue;
         } else {

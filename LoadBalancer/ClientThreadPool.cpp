@@ -14,11 +14,11 @@ void InitializeClientThreadPool(ClientThreadPool* pool) {
 
     pool->count = 0;
 
-    PrintDebug("Client thread pool initialized with size: %d", CLIENT_THREAD_POOL_SIZE);
+    PrintDebug("Client thread pool initialized with size: %d.", CLIENT_THREAD_POOL_SIZE);
 }
 
 void DestroyClientThreadPool(ClientThreadPool* pool) {
-    PrintDebug("Destroying client thread pool, waiting for threads to finish");
+    PrintDebug("Destroying client thread pool, waiting for threads to finish.");
     WaitForMultipleObjects(CLIENT_THREAD_POOL_SIZE, pool->threads, TRUE, INFINITE);
 
     pool->count = 0;
@@ -64,8 +64,8 @@ int AssignClientDataReceiverThread(ClientThreadPool* pool, SOCKET clientSocket, 
                 return -1;
             }
 
-            data->clientSocket = clientSocket;
             data->ctx = ctx;
+            data->clientSocket = clientSocket;
             data->threadIndex = i;
 
             pool->threads[i] = CreateThread(NULL, 0, ClientDataReceiverThread, data, 0, NULL);
@@ -85,8 +85,8 @@ int AssignClientDataReceiverThread(ClientThreadPool* pool, SOCKET clientSocket, 
 
             LeaveCriticalSection(&pool->lock);
 
-            PrintDebug("Client data receiver thread assigned, thread index: %d", i);
-            PrintDebug("Client thread pool usage: %d/%d", pool->count, CLIENT_THREAD_POOL_SIZE);
+            PrintDebug("Client data receiver thread assigned, thread index: %d.", i);
+            PrintDebug("Client thread pool: %d/%d.", pool->count, CLIENT_THREAD_POOL_SIZE);
 
             return i;
         }
@@ -111,6 +111,6 @@ void ReturnClientDataReceiverThread(ClientThreadPool* pool, int threadIndex, Cli
     LeaveCriticalSection(&pool->lock);
     ReleaseSemaphore(pool->semaphore, 1, NULL);
 
-    PrintDebug("Client data receiver thread returned, thread index: %d", threadIndex);
-    PrintDebug("Client thread pool usage: %d/%d", pool->count, CLIENT_THREAD_POOL_SIZE);
+    PrintDebug("Client data receiver thread returned, thread index: %d.", threadIndex);
+    PrintDebug("Client thread pool: %d/%d.", pool->count, CLIENT_THREAD_POOL_SIZE);
 }

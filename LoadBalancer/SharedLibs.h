@@ -7,7 +7,7 @@
 #include <conio.h>
 #include <windows.h>
 
-// User libraries
+// Shared user libraries
 
 #include "LoggingLib.h"
 #include "NetworkLib.h"
@@ -26,6 +26,21 @@ typedef struct {
     int count;
 } ClientThreadPool;
 
+typedef struct {
+    SOCKET clientSocket; // Client socket
+    char data[BUFFER_SIZE]; // Data from the client
+} ClientRequest;
+
+typedef struct {
+    ClientRequest queue[CLIENT_BLOCKING_REQUEST_QUEUE_CAPACITY]; // Circular buffer to store requests
+    int head; // Points to the front of the queue
+    int tail; // Points to the end of the queue
+    int count; // Number of items in the queue
+    CRITICAL_SECTION lock; // Protects access to the queue
+    HANDLE notEmpty; // Semaphore for consumers
+    HANDLE notFull; // Semaphore for producers
+} ClientBlockingRequestQueue;
+
 // Structure to hold a shared context
 typedef struct {
     CRITICAL_SECTION lock; // Synchronization primitive
@@ -40,16 +55,24 @@ typedef struct {
     addrinfo* clientConnectionResultingAddress; // Resulting address information for client connections
     addrinfo* workerConnectionResultingAddress; // Resulting address information for worker connections
     ClientThreadPool* clientThreadPool; // Client thread pool
+    ClientBlockingRequestQueue* clientBlockingRequestQueue; // Client blocking request queue
 } Context;
 
 typedef struct {
-    SOCKET clientSocket; // Client socket
     Context* ctx; // Pointer to the context
+    SOCKET clientSocket; // Client socket
     int threadIndex; // Index of the thread in the thread pool
 } ClientDataReceiverThreadData;
+
+typedef struct {
+    Context* ctx; // Pointer to the context
+    SOCKET workerSocket; // Worker socket
+} WorkerHandlerThreadData;
 
 // User libraries
 
 #include "Context.h"
 #include "ClientThreadPool.h"
+#include "ClientBlockingRequestQueue.h"
 #include "ClientDataReceiverThread.h"
+#include "WorkerHandlerThread.h"

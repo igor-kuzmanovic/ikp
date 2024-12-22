@@ -3,11 +3,8 @@
 // User libraries
 
 #include "SharedLibs.h"
-#include "Config.h"
 
 // API
-
-// Structures
 
 // Functions
 

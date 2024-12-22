@@ -53,7 +53,7 @@ DWORD WINAPI WorkerHandlerThread(LPVOID lpParam) {
                     break;
                 }
 
-                Sleep(10); // Avoid busy waiting
+                Sleep(BUSY_WAIT_TIME); // Avoid busy waiting
 
                 continue;
             }
@@ -69,7 +69,7 @@ DWORD WINAPI WorkerHandlerThread(LPVOID lpParam) {
                 break;
             }
 
-            Sleep(10); // Avoid busy waiting
+            Sleep(BUSY_WAIT_TIME); // Avoid busy waiting
 
             continue;
         }

@@ -3,18 +3,8 @@
 // User libraries
 
 #include "SharedLibs.h"
-#include "Config.h"
 
 // API
-
-// Structures
-
-typedef struct {
-    CRITICAL_SECTION lock; // Synchronization primitive
-    HANDLE finishSignal; // Finish signal
-    bool finishFlag; // Finish flag
-    SOCKET connectSocket; // Connect socket
-} Context;
 
 // Functions
 

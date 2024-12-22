@@ -3,7 +3,6 @@
 // User libraries
 
 #include "SharedLibs.h"
-#include "Config.h"
 #include "ClientListenerThread.h"
 #include "InputHandlerThread.h"
 #include "WorkerHandlerThread.h"

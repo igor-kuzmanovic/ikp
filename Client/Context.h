@@ -3,18 +3,8 @@
 // User libraries
 
 #include "SharedLibs.h"
-#include "Config.h"
 
 // API
-
-// Structures
-
-typedef struct {
-    CRITICAL_SECTION lock; // Synchronization primitive
-    HANDLE finishSignal; // Finish signal
-    bool finishFlag; // Finish flag
-    SOCKET connectSocket; // Connect socket
-} Context;
 
 // Functions
 
@@ -29,3 +19,9 @@ int SetFinishSignal(Context* ctx);
 
 // Gets the finish flag
 bool GetFinishFlag(Context* ctx);
+
+// Gets the pause sender flag
+bool GetPauseSender(Context* ctx);
+
+// Sets the pause sender flag
+bool SetPauseSender(Context* ctx, bool pause);
