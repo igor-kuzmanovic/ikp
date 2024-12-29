@@ -131,7 +131,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="ClientBlockingRequestQueue.cpp" />
+    <ClCompile Include="ClientRequestQueue.cpp" />
     <ClCompile Include="ClientDataReceiverThread.cpp" />
     <ClCompile Include="ClientHandlerThread.cpp" />
     <ClCompile Include="ClientListenerThread.cpp" />
@@ -139,21 +139,25 @@
     <ClCompile Include="InputHandlerThread.cpp" />
     <ClCompile Include="LoadBalancer.cpp" />
     <ClCompile Include="ClientThreadPool.cpp" />
+    <ClCompile Include="WorkerClientRequestDispatcherThread.cpp" />
     <ClCompile Include="WorkerHandlerThread.cpp" />
+    <ClCompile Include="WorkerList.cpp" />
     <ClCompile Include="WorkerListenerThread.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ClientDataReceiverThread.h" />
     <ClInclude Include="ClientHandlerThread.h" />
     <ClInclude Include="ClientListenerThread.h" />
-    <ClInclude Include="ClientBlockingRequestQueue.h" />
+    <ClInclude Include="ClientRequestQueue.h" />
     <ClInclude Include="ClientThreadPool.h" />
     <ClInclude Include="Config.h" />
     <ClInclude Include="Context.h" />
     <ClInclude Include="InputHandlerThread.h" />
     <ClInclude Include="LoadBalancer.h" />
     <ClInclude Include="SharedLibs.h" />
+    <ClInclude Include="WorkerClientRequestDispatcherThread.h" />
     <ClInclude Include="WorkerHandlerThread.h" />
+    <ClInclude Include="WorkerList.h" />
     <ClInclude Include="WorkerListenerThread.h" />
   </ItemGroup>
   <ItemGroup>

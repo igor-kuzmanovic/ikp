@@ -15,7 +15,7 @@ DWORD WINAPI ReceiverThread(LPVOID lpParam) {
     while (true) {
         // Wait for the signal to stop the thread
         if (WaitForSingleObject(ctx->finishSignal, 0) == WAIT_OBJECT_0) {
-            PrintInfo("Stop signal received, stopping receiver.");
+            PrintDebug("Stop signal received, stopping receiver.");
 
             break;
         }
@@ -23,11 +23,11 @@ DWORD WINAPI ReceiverThread(LPVOID lpParam) {
         // Receive data from server
         recvResult = recv(ctx->connectSocket, receiveBuffer, BUFFER_SIZE, 0);
         if (recvResult > 0) {
-            PrintInfo("Reply received: '%s' with length %d.", receiveBuffer, recvResult);
+            PrintInfo("Client request received: '%s' with length %d.", receiveBuffer, recvResult);
 
             // Check if server is shutting down
             if (strstr(receiveBuffer, "Server is shutting down.") != NULL) {
-                PrintInfo("Server shutdown notification received. Stopping worker...");
+                PrintInfo("Server shutdown notification received.");
 
                 PrintDebug("Setting the finish signal.");
                 SetFinishSignal(ctx);
@@ -46,7 +46,7 @@ DWORD WINAPI ReceiverThread(LPVOID lpParam) {
                 break;
             }
 
-            Sleep(BUSY_WAIT_TIME); // Avoid busy waiting
+            Sleep(INPUT_WAIT_TIME);
 
             continue;
         }

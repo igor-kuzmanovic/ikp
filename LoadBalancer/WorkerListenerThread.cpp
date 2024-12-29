@@ -2,8 +2,7 @@
 
 DWORD WINAPI WorkerListenerThread(LPVOID lpParam) {
     PrintDebug("Worker listener started.");
-
-    // Context
+    
     Context* ctx = (Context*)lpParam;
 
     int iResult;
@@ -11,7 +10,7 @@ DWORD WINAPI WorkerListenerThread(LPVOID lpParam) {
     while (true) {
         // Wait for the signal to stop the thread
         if (WaitForSingleObject(ctx->finishSignal, 0) == WAIT_OBJECT_0) {
-            PrintInfo("Stop signal received, stopping worker handler.");
+            PrintDebug("Stop signal received, stopping worker handler.");
 
             break;
         }
@@ -23,47 +22,26 @@ DWORD WINAPI WorkerListenerThread(LPVOID lpParam) {
                 PrintError("'accept' failed with error: %d.", WSAGetLastError());
             }
 
-            Sleep(BUSY_WAIT_TIME); // Avoid busy waiting
-
             continue;
         } else {
             PrintInfo("New worker connected.");
 
-            // Create a structure to pass to the worker thread
-            PrintDebug("Creating a new worker handler thread data structure.");
-            WorkerHandlerThreadData* handlerThreadData = (WorkerHandlerThreadData*)malloc(sizeof(WorkerHandlerThreadData));
-            if (!handlerThreadData) {
-                PrintError("Memory allocation failed for thread data.");
-
-                // Close the worker socket
-                PrintDebug("Closing worker socket.");
-                iResult = closesocket(workerSocket);
-                if (iResult == SOCKET_ERROR) {
-                    PrintError("'closesocket' failed with error: %d.", WSAGetLastError());
-                }
-
-                break;
-            }
-            handlerThreadData->ctx = ctx; // Pass the context pointer
-            handlerThreadData->workerSocket = workerSocket; // Initialize the worker socket
+            // TODO Remove workerCount from the context and use the workerList->count instead
             if (ctx->workerCount < MAX_WORKERS) {
-                PrintDebug("Creating a new worker handler thread.");
-                ctx->workerHandlerThreads[ctx->workerCount] = CreateThread(NULL, 0, WorkerHandlerThread, handlerThreadData, 0, NULL);
-                if (ctx->workerHandlerThreads[ctx->workerCount] == NULL) {
-                    PrintError("'CreateThread' failed with error: %d.", GetLastError());
-
-                    // Close the worker socket
+                PrintDebug("Adding the worker to the worker list.");
+                iResult = AddWorker(ctx->workerList, workerSocket);
+                if (iResult == -1) {
+                    PrintWarning("Cannot add worker to the worker list. Rejecting worker.");
+                    
+                    PrintDebug("Closing the worker socket.");
                     closesocket(workerSocket);
-
-                    // Free the thread data memory
-                    free(handlerThreadData);
                 } else {
                     ctx->workerCount++;
                 }
             } else {
                 PrintWarning("Maximum worker limit reached. Rejecting worker.");
 
-                // Close the worker socket
+                PrintDebug("Closing the worker socket.");
                 closesocket(workerSocket);
             }
         }

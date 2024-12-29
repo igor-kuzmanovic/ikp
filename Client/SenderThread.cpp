@@ -18,10 +18,16 @@ DWORD WINAPI SenderThread(LPVOID lpParam) {
     // Message counter
     int messageCounter = 0;
 
-    while (true) {
+    if (MESSAGE_COUNT != INFINITE) {
+        PrintInfo("Sending %d messages to the server.", MESSAGE_COUNT);
+    } else {
+        PrintInfo("Sending messages to the server until the stop signal is received.");
+    }
+
+    while (MESSAGE_COUNT == INFINITE || messageCounter < MESSAGE_COUNT) {
         // Wait for the signal to stop the thread
         if (WaitForSingleObject(ctx->finishSignal, 0) == WAIT_OBJECT_0) {
-            PrintInfo("Stop signal received, stopping sender.");
+            PrintDebug("Stop signal received, stopping sender.");
 
             break;
         }
@@ -58,8 +64,6 @@ DWORD WINAPI SenderThread(LPVOID lpParam) {
 
                 break;
             }
-
-            Sleep(BUSY_WAIT_TIME); // Avoid busy waiting
 
             continue;
         }

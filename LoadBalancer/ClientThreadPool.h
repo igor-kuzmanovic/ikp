@@ -8,10 +8,10 @@
 
 // Functions
 
-void InitializeClientThreadPool(ClientThreadPool* pool);
+int InitializeClientThreadPool(ClientThreadPool* pool);
 
-void DestroyClientThreadPool(ClientThreadPool* pool);
+int DestroyClientThreadPool(ClientThreadPool* pool);
 
 int AssignClientDataReceiverThread(ClientThreadPool* pool, SOCKET clientSocket, Context *ctx);
 
-void ReturnClientDataReceiverThread(ClientThreadPool* pool, int threadIndex, ClientDataReceiverThreadData* data);
+int ReturnClientDataReceiverThread(ClientThreadPool* pool, int threadIndex, ClientDataReceiverThreadData* data);

@@ -20,7 +20,11 @@ static void PrintFormatted(const char* level, const char* format, va_list args) 
     }
 
     // Combine the date-time, level, and user message
+#ifdef LOG_NAMESPACE
+    snprintf(messageBuffer, sizeof(messageBuffer), "[%s] [%s] [%s] %s\n", timeBuffer, LOG_NAMESPACE, level, format);
+#else
     snprintf(messageBuffer, sizeof(messageBuffer), "[%s] [%s] %s\n", timeBuffer, level, format);
+#endif
 
     // Print the formatted string with arguments
     vprintf(messageBuffer, args);

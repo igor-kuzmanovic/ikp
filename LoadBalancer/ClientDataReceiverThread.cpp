@@ -5,7 +5,6 @@ DWORD WINAPI ClientDataReceiverThread(LPVOID lpParam) {
 
     ClientDataReceiverThreadData* threadData = (ClientDataReceiverThreadData*)lpParam;
 
-    // Access the socket, context and thread pool
     SOCKET clientSocket = threadData->clientSocket;
     Context* ctx = threadData->ctx;
     int threadIndex = threadData->threadIndex;
@@ -24,7 +23,7 @@ DWORD WINAPI ClientDataReceiverThread(LPVOID lpParam) {
     while (true) {
         // Wait for the signal to stop the thread
         if (WaitForSingleObject(ctx->finishSignal, 0) == WAIT_OBJECT_0) {
-            PrintInfo("Stop signal received, stopping client data receiver.");
+            PrintDebug("Stop signal received, stopping client data receiver.");
 
             break;
         }
@@ -34,16 +33,16 @@ DWORD WINAPI ClientDataReceiverThread(LPVOID lpParam) {
         if (recvResult > 0) {
             PrintInfo("Message received: '%s' with length %d.", receiveBuffer, recvResult);
 
-            iResult = PutClientBlockingRequestQueue(ctx->clientBlockingRequestQueue, clientSocket, receiveBuffer);
+            iResult = PutClientRequestQueue(ctx->clientRequestQueue, clientSocket, receiveBuffer);
             if (iResult == -1) {
-                PrintError("Failed to put the request in the client blocking request queue.");
+                PrintError("Failed to put the request in the client request queue.");
 
                 PrintDebug("Notifying the client that the server is busy.");
                 const char* busyMessage = "Server is busy.";
                 send(clientSocket, busyMessage, (int)strlen(busyMessage) + 1, 0);
 
-                PrintDebug("Sleeping for %d ms before accepting new requests.", CLIENT_BLOCKING_REQUEST_QUEUE_FULL_SLEEP_TIME);
-                Sleep(CLIENT_BLOCKING_REQUEST_QUEUE_FULL_SLEEP_TIME);
+                PrintDebug("Sleeping for %d ms before accepting new requests.", CLIENT_REQUEST_QUEUE_FULL_SLEEP_TIME);
+                Sleep(CLIENT_REQUEST_QUEUE_FULL_SLEEP_TIME);
 
                 continue;
             }
@@ -58,8 +57,6 @@ DWORD WINAPI ClientDataReceiverThread(LPVOID lpParam) {
 
                 break;
             }
-
-            Sleep(BUSY_WAIT_TIME); // Avoid busy waiting
 
             continue;
         }

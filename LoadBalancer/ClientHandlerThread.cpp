@@ -23,7 +23,7 @@ DWORD WINAPI ClientHandlerThread(LPVOID lpParam) {
     while (true) {
         // Wait for the signal to stop the thread
         if (WaitForSingleObject(ctx->finishSignal, 0) == WAIT_OBJECT_0) {
-            PrintInfo("Stop signal received, stopping client handler.");
+            PrintDebug("Stop signal received, stopping client handler.");
 
             break;
         }
@@ -53,8 +53,6 @@ DWORD WINAPI ClientHandlerThread(LPVOID lpParam) {
                     break;
                 }
 
-                Sleep(BUSY_WAIT_TIME); // Avoid busy waiting
-
                 continue;
             }
         } else if (recvResult == 0) {
@@ -68,8 +66,6 @@ DWORD WINAPI ClientHandlerThread(LPVOID lpParam) {
 
                 break;
             }
-
-            Sleep(BUSY_WAIT_TIME); // Avoid busy waiting
 
             continue;
         }

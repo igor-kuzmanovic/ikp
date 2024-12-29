@@ -1,6 +1,9 @@
 #include "SenderThread.h"
 
 DWORD WINAPI SenderThread(LPVOID lpParam) {
+    // TODO No longer need this thread, reuse it to send notifications to the server later
+    return TRUE;
+
     PrintDebug("Sender started.");
 
     // Context
@@ -12,7 +15,7 @@ DWORD WINAPI SenderThread(LPVOID lpParam) {
     while (true) {
         // Wait for the signal to stop the thread
         if (WaitForSingleObject(ctx->finishSignal, 0) == WAIT_OBJECT_0) {
-            PrintInfo("Stop signal received, stopping sender.");
+            PrintDebug("Stop signal received, stopping sender.");
 
             break;
         }
@@ -34,8 +37,6 @@ DWORD WINAPI SenderThread(LPVOID lpParam) {
 
                 break;
             }
-
-            Sleep(BUSY_WAIT_TIME); // Avoid busy waiting
 
             continue;
         }

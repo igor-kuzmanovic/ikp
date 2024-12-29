@@ -3,7 +3,6 @@
 DWORD WINAPI ClientListenerThread(LPVOID lpParam) {
     PrintDebug("Client listener started.");
 
-    // Context
     Context* ctx = (Context*)lpParam;
 
     int iResult;
@@ -11,7 +10,7 @@ DWORD WINAPI ClientListenerThread(LPVOID lpParam) {
     while (true) {
         // Wait for the signal to stop the thread
         if (WaitForSingleObject(ctx->finishSignal, 0) == WAIT_OBJECT_0) {
-            PrintInfo("Stop signal received, stopping client handler.");
+            PrintDebug("Stop signal received, stopping client handler.");
 
             break;
         }
@@ -23,19 +22,18 @@ DWORD WINAPI ClientListenerThread(LPVOID lpParam) {
                 PrintError("'accept' failed with error: %d.", WSAGetLastError());
             }
 
-            Sleep(BUSY_WAIT_TIME); // Avoid busy waiting
-
             continue;
         } else {
             PrintInfo("New client connected.");
 
+            // TODO Remove clientCount from the context and use the clientThreadPool->count instead
             if (ctx->clientCount < MAX_CLIENTS) {
                 PrintDebug("Assigning the client to a client data receiver thread.");
                 iResult = AssignClientDataReceiverThread(ctx->clientThreadPool, clientSocket, ctx);
                 if (iResult == -1) {
                     PrintWarning("Cannot assign client to a client data receiver thread. Rejecting client.");
 
-                    // Close the client socket
+                    PrintDebug("Closing the client socket.");
                     closesocket(clientSocket);
                 } else {
                     ctx->clientCount++;
@@ -43,12 +41,10 @@ DWORD WINAPI ClientListenerThread(LPVOID lpParam) {
             } else {
                 PrintWarning("Maximum client limit reached. Rejecting client.");
 
-                // Close the client socket
+                PrintDebug("Closing the client socket.");
                 closesocket(clientSocket);
             }
         }
-
-        Sleep(BUSY_WAIT_TIME); // Avoid busy waiting
     }
 
     PrintDebug("Client listener stopped.");

@@ -4,6 +4,8 @@ int ContextInitialize(Context* ctx) {
     InitializeCriticalSection(&ctx->lock);
     ctx->finishSignal = CreateSemaphore(0, 0, THREAD_COUNT, NULL);
     if (ctx->finishSignal == NULL) {
+        PrintCritical("Failed to create a semaphore for the finish signal.");
+
         return GetLastError();
     }
     ctx->finishFlag = false;
@@ -13,12 +15,14 @@ int ContextInitialize(Context* ctx) {
 }
 
 int ContextDestroy(Context* ctx) {
+    EnterCriticalSection(&ctx->lock);
     ctx->connectSocket = INVALID_SOCKET;
     if (ctx->finishSignal != NULL) {
         CloseHandle(ctx->finishSignal);
         ctx->finishSignal = NULL;
     }
     ctx->finishFlag = false;
+    LeaveCriticalSection(&ctx->lock);
     DeleteCriticalSection(&ctx->lock);
 
     return 0;

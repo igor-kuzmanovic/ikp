@@ -21,8 +21,10 @@ DWORD WINAPI InputHandlerThread(LPVOID lpParam) {
             }
         }
 
-        Sleep(BUSY_WAIT_TIME); // Avoid busy waiting
+        Sleep(INPUT_WAIT_TIME);
     }
+
+    PrintDebug("Input handler stopped.");
 
     return TRUE;
 }

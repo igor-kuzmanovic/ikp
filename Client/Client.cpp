@@ -79,7 +79,7 @@ int main() {
     // Retry logic for connecting to the server
     int retryCount = 1;
     while (GetFinishFlag(&ctx) != true && retryCount < SERVER_CONNECT_MAX_RETRIES) {
-        PrintDebug("Connecting to the server (Attempt %d/%d).", retryCount, SERVER_CONNECT_MAX_RETRIES);
+        PrintInfo("Connecting to the server (Attempt %d/%d).", retryCount, SERVER_CONNECT_MAX_RETRIES);
 
         // Connect to server specified in serverAddress and socket connectSocket
         iResult = connect(ctx.connectSocket, (SOCKADDR*)&serverAddress, sizeof(serverAddress));

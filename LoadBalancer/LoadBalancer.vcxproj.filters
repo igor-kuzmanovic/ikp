@@ -42,7 +42,13 @@
     <ClCompile Include="ClientDataReceiverThread.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ClientBlockingRequestQueue.cpp">
+    <ClCompile Include="ClientRequestQueue.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="WorkerList.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="WorkerClientRequestDispatcherThread.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -80,7 +86,13 @@
     <ClInclude Include="ClientDataReceiverThread.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ClientBlockingRequestQueue.h">
+    <ClInclude Include="ClientRequestQueue.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="WorkerList.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="WorkerClientRequestDispatcherThread.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

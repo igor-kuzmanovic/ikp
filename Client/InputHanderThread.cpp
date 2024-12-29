@@ -12,7 +12,7 @@ DWORD WINAPI InputHandlerThread(LPVOID lpParam) {
         if (_kbhit()) { // Check if a key is pressed
             char ch = _getch();
             if (ch == 'q' || ch == 'Q') {
-                PrintInfo("Shutdown signal received.");
+                PrintDebug("Shutdown signal received.");
 
                 PrintDebug("Setting the finish signal.");
                 SetFinishSignal(ctx);
@@ -21,8 +21,10 @@ DWORD WINAPI InputHandlerThread(LPVOID lpParam) {
             }
         }
 
-        Sleep(BUSY_WAIT_TIME); // Avoid busy waiting
+        Sleep(INPUT_WAIT_TIME);
     }
+
+    PrintDebug("Input handler stopped.");
 
     return TRUE;
 }

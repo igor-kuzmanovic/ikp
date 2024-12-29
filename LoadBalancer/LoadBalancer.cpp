@@ -1,7 +1,7 @@
 #include "LoadBalancer.h"
 
 int main(void) {
-    PrintDebug("Load Balancer started.");
+    PrintDebug("Load balancer started.");
 
     int iResult;
 
@@ -9,7 +9,8 @@ int main(void) {
     HANDLE inputHandlerThread = NULL;
     HANDLE workerListenerThread = NULL;
     HANDLE clientListenerThread = NULL;
-    HANDLE threads[THREAD_COUNT] = { NULL, NULL, NULL };
+    HANDLE workerClientRequestDispatcherThread = NULL;
+    HANDLE threads[THREAD_COUNT] = { NULL, NULL, NULL, NULL };
 
     // Initialize Winsock
     PrintDebug("Initializing Winsock.");
@@ -210,12 +211,25 @@ int main(void) {
     }
     threads[2] = clientListenerThread;
 
+    // Starts dispatching client requests to workers in a new thread
+    PrintDebug("Starting worker client request dispatcher thread.");
+    workerClientRequestDispatcherThread = CreateThread(NULL, 0, &WorkerClientRequestDispatcherThread, &ctx, NULL, NULL);
+    if (workerClientRequestDispatcherThread == NULL) {
+        PrintCritical("'CreateThread' for WorkerClientRequestDispatcherThread failed with error: %d.", GetLastError());
+
+        // Close everything and cleanup
+        CleanupFull(&ctx, threads, THREAD_COUNT);
+
+        return EXIT_FAILURE;
+    }
+    threads[3] = workerClientRequestDispatcherThread;
+
     PrintInfo("Server initialized, waiting for clients and workers.");
 
     while (true) {
         // Check stop signal
         if (GetFinishFlag(&ctx)) {
-            PrintInfo("Stop signal received, stopping accepting new clients and workers.");
+            PrintDebug("Stop signal received, stopping accepting new clients and workers.");
 
             break;
         }
@@ -249,8 +263,6 @@ int main(void) {
                 i--; // Recheck the current index
             }
         }
-
-        Sleep(BUSY_WAIT_TIME); // Avoid busy waiting
     };
 
     // Wait for the client handler threads to finish
@@ -268,7 +280,7 @@ int main(void) {
     // Close everything and cleanup
     CleanupFull(&ctx, threads, THREAD_COUNT);
 
-    PrintDebug("Load Balancer stopped.");
+    PrintDebug("Load balancer stopped.");
 
     PrintInfo("Press any key to exit.");
 
