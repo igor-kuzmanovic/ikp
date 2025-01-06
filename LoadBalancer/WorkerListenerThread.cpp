@@ -26,23 +26,26 @@ DWORD WINAPI WorkerListenerThread(LPVOID lpParam) {
         } else {
             PrintInfo("New worker connected.");
 
-            // TODO Remove workerCount from the context and use the workerList->count instead
-            if (ctx->workerCount < MAX_WORKERS) {
+            if (ctx->workerList->count < MAX_WORKERS) {
                 PrintDebug("Adding the worker to the worker list.");
                 iResult = AddWorker(ctx->workerList, workerSocket);
                 if (iResult == -1) {
                     PrintWarning("Cannot add worker to the worker list. Rejecting worker.");
                     
                     PrintDebug("Closing the worker socket.");
-                    closesocket(workerSocket);
-                } else {
-                    ctx->workerCount++;
+                    iResult = closesocket(workerSocket);
+                    if (iResult == SOCKET_ERROR) {
+                        PrintError("'closesocket' failed with error: %d.", WSAGetLastError());
+                    }
                 }
             } else {
                 PrintWarning("Maximum worker limit reached. Rejecting worker.");
 
                 PrintDebug("Closing the worker socket.");
-                closesocket(workerSocket);
+                iResult = closesocket(workerSocket);
+                if (iResult == SOCKET_ERROR) {
+                    PrintError("'closesocket' failed with error: %d.", WSAGetLastError());
+                }
             }
         }
     }

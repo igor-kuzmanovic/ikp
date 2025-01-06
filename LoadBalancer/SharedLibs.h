@@ -29,6 +29,7 @@
 // Structures
 
 typedef struct WorkerNode {
+    int id;                     // Worker id
     SOCKET socket;              // Worker socket
     struct WorkerNode* next;    // Next node in the list
     struct WorkerNode* prev;    // Previous node in the list
@@ -38,14 +39,16 @@ typedef struct {
     WorkerNode* head;       // Head of the circular list
     WorkerNode* current;    // Pointer for Round Robin traversal
     CRITICAL_SECTION lock;  // Protects access to the list
-    HANDLE semaphore;       // Semaphore for synchronization
+    HANDLE notEmpty;        // Not empty signal
+    HANDLE notFull;         // Not full signal
     int count;              // Number of workers
+    int nextGeneratedId;    // Next generated worker id
 } WorkerList;
 
 typedef struct {
-    HANDLE threads[CLIENT_THREAD_POOL_SIZE];        // Client threads
-    SOCKET clientSockets[CLIENT_THREAD_POOL_SIZE];  // Client sockets
-    BOOL isAvailable[CLIENT_THREAD_POOL_SIZE];      // Availability of the threads
+    HANDLE threads[MAX_CLIENTS];        // Client threads
+    SOCKET clientSockets[MAX_CLIENTS];  // Client sockets
+    BOOL isAvailable[MAX_CLIENTS];      // Availability of the threads
     CRITICAL_SECTION lock;                          // Protects access to the pool
     HANDLE semaphore;                               // Semaphore for synchronization
     int count;                                      // Number of threads
@@ -62,8 +65,8 @@ typedef struct {
     int tail;                                           // Points to the end of the queue
     int count;                                          // Number of items in the queue
     CRITICAL_SECTION lock;                              // Protects access to the queue
-    HANDLE notEmpty;                                    // Semaphore for consumers
-    HANDLE notFull;                                     // Semaphore for producers
+    HANDLE notEmpty;                                    // Not empty signal for consumers
+    HANDLE notFull;                                     // Not full signal for producers
 } ClientRequestQueue;
 
 // Structure to hold a shared context
@@ -73,10 +76,6 @@ typedef struct {
     bool finishFlag;                            // Stop flag
     SOCKET clientListenSocket;                  // Client listen socket
     SOCKET workerListenSocket;                  // Worker listen socket
-    HANDLE clientHandlerThreads[MAX_CLIENTS];   // Handles for client threads
-    HANDLE workerHandlerThreads[MAX_WORKERS];   // Handles for worker threads
-    int clientCount;                            // Number of active clients
-    int workerCount;                            // Number of active workers
     addrinfo* clientConnectionResultingAddress; // Resulting address information for client connections
     addrinfo* workerConnectionResultingAddress; // Resulting address information for worker connections
     WorkerList* workerList;                     // Worker list

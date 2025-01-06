@@ -26,7 +26,7 @@ DWORD WINAPI ReceiverThread(LPVOID lpParam) {
         // Receive data from server
         recvResult = recv(ctx->connectSocket, receiveBuffer, BUFFER_SIZE, 0);
         if (recvResult > 0) {
-            PrintInfo("Reply received: '%s' with length %d.", receiveBuffer, recvResult);
+            PrintInfo("Message received: '%s' with length %d.", receiveBuffer, recvResult);
 
             // Check if server is shutting down
             if (strstr(receiveBuffer, SERVER_SHUTDOWN_MESSAGE) != NULL) {

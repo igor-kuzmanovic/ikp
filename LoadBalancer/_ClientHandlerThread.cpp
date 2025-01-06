@@ -48,7 +48,7 @@ DWORD WINAPI ClientHandlerThread(LPVOID lpParam) {
             } else {
                 if (WSAGetLastError() != WSAEWOULDBLOCK) {
                     // Ignore WSAEWOULDBLOCK, it is not an actual error
-                    PrintError("'send' failed with error: %d.", WSAGetLastError());
+                    PrintError("[ClientHandlerThread] 'send' failed with error: %d.", WSAGetLastError());
 
                     break;
                 }
@@ -75,7 +75,7 @@ DWORD WINAPI ClientHandlerThread(LPVOID lpParam) {
     PrintDebug("Notifying client of server shutdown.");
     sendResult = send(clientSocket, SERVER_SHUTDOWN_MESSAGE, (int)strlen(SERVER_SHUTDOWN_MESSAGE) + 1, 0);
     if (sendResult == SOCKET_ERROR) {
-        PrintError("'send' failed with error: %d.", WSAGetLastError());
+        PrintError("[ClientHandlerThread] 'send' failed with error: %d.", WSAGetLastError());
     }
 
     // Close the client socket

@@ -91,18 +91,21 @@ DWORD WINAPI WorkerClientRequestDispatcherThread(LPVOID lpParam) {
 
                 memset(worker, 0, sizeof(WorkerNode));
                 hasWorker = false;
-            } else if (sendResult == 0 || WSAGetLastError() != WSAEWOULDBLOCK) {
+            } else if (sendResult == 0) {
                 PrintError("Worker disconnected.");
-
-                iResult = RemoveWorker(ctx->workerList, worker->socket);
-                if (iResult < 0) {
-                    PrintError("Failed to remove the worker from the list.");
-
-                    continue;
-                }
 
                 memset(worker, 0, sizeof(WorkerNode));
                 hasWorker = false;
+            } else {
+                if (WSAGetLastError() != WSAEWOULDBLOCK) {
+                    // Ignore WSAEWOULDBLOCK, it is not an actual error
+                    PrintError("[WorkerClientRequestDispatchedThread] 'send' failed with error: %d.", WSAGetLastError());
+
+                    memset(worker, 0, sizeof(WorkerNode));
+                    hasWorker = false;
+                }
+
+                continue;
             }
         } else if (hasRequest) {
             PrintDebug("Holding the request until a worker is available.");

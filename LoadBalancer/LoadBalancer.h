@@ -6,6 +6,7 @@
 #include "ClientListenerThread.h"
 #include "InputHandlerThread.h"
 #include "WorkerListenerThread.h"
+#include "WorkerHealthCheckThread.h"
 
 // API
 

@@ -133,6 +133,7 @@
   <ItemGroup>
     <ClCompile Include="ClientRequestQueue.cpp" />
     <ClCompile Include="ClientDataReceiverThread.cpp" />
+    <ClCompile Include="WorkerHealthCheckThread.cpp" />
     <ClCompile Include="_ClientHandlerThread.cpp" />
     <ClCompile Include="ClientListenerThread.cpp" />
     <ClCompile Include="Context.cpp" />
@@ -146,6 +147,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ClientDataReceiverThread.h" />
+    <ClInclude Include="WorkerHealthCheckThread.h" />
     <ClInclude Include="_ClientHandlerThread.h" />
     <ClInclude Include="ClientListenerThread.h" />
     <ClInclude Include="ClientRequestQueue.h" />

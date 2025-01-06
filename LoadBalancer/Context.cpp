@@ -19,18 +19,8 @@ int ContextInitialize(Context* ctx) {
     ctx->finishFlag = false;
 
     ctx->clientListenSocket = INVALID_SOCKET;
-    for (int i = 0; i < MAX_CLIENTS; i++) {
-        ctx->clientHandlerThreads[i] = NULL;
-    }
-
-    ctx->clientCount = 0;
 
     ctx->workerListenSocket = INVALID_SOCKET;
-    for (int i = 0; i < MAX_WORKERS; i++) {
-        ctx->workerHandlerThreads[i] = NULL;
-    }
-
-    ctx->workerCount = 0;
 
     ctx->clientConnectionResultingAddress = NULL;
 
@@ -88,23 +78,6 @@ int ContextDestroy(Context* ctx) {
 
     ctx->clientConnectionResultingAddress = NULL;
 
-    ctx->workerCount = 0;
-
-    for (int i = 0; i < ctx->workerCount; i++) {
-        if (ctx->workerHandlerThreads[i] != NULL) {
-            CloseHandle(ctx->workerHandlerThreads[i]);
-            ctx->workerHandlerThreads[i] = NULL;
-        }
-    }
-    ctx->clientCount = 0;
-
-    for (int i = 0; i < ctx->clientCount; i++) {
-        if (ctx->clientHandlerThreads[i] != NULL) {
-            CloseHandle(ctx->clientHandlerThreads[i]);
-            ctx->clientHandlerThreads[i] = NULL;
-        }
-    }
-
     ctx->workerListenSocket = INVALID_SOCKET;
 
     ctx->clientListenSocket = INVALID_SOCKET;
@@ -131,8 +104,7 @@ int SetFinishSignal(Context* ctx) {
 
     EnterCriticalSection(&ctx->lock);
 
-    // TODO Should we track the number of active threads?
-    ReleaseSemaphore(ctx->finishSignal, ctx->clientCount + ctx->workerCount + THREAD_COUNT, NULL);
+    ReleaseSemaphore(ctx->finishSignal, THREAD_COUNT, NULL);
     ctx->finishFlag = true;
 
     LeaveCriticalSection(&ctx->lock);

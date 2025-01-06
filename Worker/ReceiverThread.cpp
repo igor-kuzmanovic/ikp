@@ -23,8 +23,6 @@ DWORD WINAPI ReceiverThread(LPVOID lpParam) {
         // Receive data from server
         recvResult = recv(ctx->connectSocket, receiveBuffer, BUFFER_SIZE, 0);
         if (recvResult > 0) {
-            PrintInfo("Client request received: '%s' with length %d.", receiveBuffer, recvResult);
-
             // Check if server is shutting down
             if (strstr(receiveBuffer, SERVER_SHUTDOWN_MESSAGE) != NULL) {
                 PrintInfo("Server shutdown notification received.");
@@ -33,6 +31,12 @@ DWORD WINAPI ReceiverThread(LPVOID lpParam) {
                 SetFinishSignal(ctx);
 
                 break;
+            } else if (strstr(receiveBuffer, WORKER_HEALTH_CHECK_MESSAGE) != NULL) {
+                PrintInfo("Health check request received.");
+
+                continue;
+            } else {
+                PrintInfo("Client request received: '%s' with length %d.", receiveBuffer, recvResult);
             }
         } else if (recvResult == 0) {
             PrintInfo("Server closed the connection.");

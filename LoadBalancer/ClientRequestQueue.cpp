@@ -94,13 +94,11 @@ int PutClientRequestQueue(ClientRequestQueue* queue, SOCKET clientSocket, const 
         return -1;
     }
 
-    PrintDebug("Entering the client request queue critical section.");
     EnterCriticalSection(&queue->lock);
 
     if (queue->count >= CLIENT_REQUEST_QUEUE_CAPACITY) {
-        PrintError("Client request queue is full after semaphore signal.");
+        PrintError("Client request queue is full (%d) after semaphore signal.", CLIENT_REQUEST_QUEUE_CAPACITY);
 
-        PrintDebug("Leaving the client request queue critical section.");
         LeaveCriticalSection(&queue->lock);
 
         return 0;
@@ -113,7 +111,6 @@ int PutClientRequestQueue(ClientRequestQueue* queue, SOCKET clientSocket, const 
     queue->tail = (queue->tail + 1) % CLIENT_REQUEST_QUEUE_CAPACITY;
     queue->count++;
 
-    PrintDebug("Leaving the client request queue critical section.");
     LeaveCriticalSection(&queue->lock);
 
     PrintDebug("Signaling that there is data available in the client request queue.");
@@ -152,13 +149,11 @@ int TakeClientRequestQueue(ClientRequestQueue* queue, ClientRequest* request) {
         return -1;
     }
 
-    PrintDebug("Entering the client request queue critical section.");
     EnterCriticalSection(&queue->lock);
 
     if (queue->count <= 0) {
         PrintError("Client request queue is empty after semaphore signal.");
 
-        PrintDebug("Leaving the client request queue critical section.");
         LeaveCriticalSection(&queue->lock);
 
         return 0;
@@ -171,7 +166,6 @@ int TakeClientRequestQueue(ClientRequestQueue* queue, ClientRequest* request) {
     queue->head = (queue->head + 1) % CLIENT_REQUEST_QUEUE_CAPACITY;
     queue->count--;
 
-    PrintDebug("Leaving the client request queue critical section.");
     LeaveCriticalSection(&queue->lock);
 
     PrintDebug("Signaling that there is a free slot in the client request queue.");

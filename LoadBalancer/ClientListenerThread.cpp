@@ -26,23 +26,26 @@ DWORD WINAPI ClientListenerThread(LPVOID lpParam) {
         } else {
             PrintInfo("New client connected.");
 
-            // TODO Remove clientCount from the context and use the clientThreadPool->count instead
-            if (ctx->clientCount < MAX_CLIENTS) {
+            if (ctx->clientThreadPool->count < MAX_CLIENTS) {
                 PrintDebug("Assigning the client to a client data receiver thread.");
                 iResult = AssignClientDataReceiverThread(ctx->clientThreadPool, clientSocket, ctx);
                 if (iResult == -1) {
                     PrintWarning("Cannot assign client to a client data receiver thread. Rejecting client.");
 
                     PrintDebug("Closing the client socket.");
-                    closesocket(clientSocket);
-                } else {
-                    ctx->clientCount++;
+                    iResult = closesocket(clientSocket);
+                    if (iResult == SOCKET_ERROR) {
+                        PrintError("'closesocket' failed with error: %d.", WSAGetLastError());
+                    }
                 }
             } else {
                 PrintWarning("Maximum client limit reached. Rejecting client.");
 
                 PrintDebug("Closing the client socket.");
-                closesocket(clientSocket);
+                iResult = closesocket(clientSocket);
+                if (iResult == SOCKET_ERROR) {
+                    PrintError("'closesocket' failed with error: %d.", WSAGetLastError());
+                }
             }
         }
     }

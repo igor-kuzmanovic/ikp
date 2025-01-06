@@ -48,7 +48,7 @@ DWORD WINAPI WorkerHandlerThread(LPVOID lpParam) {
             } else {
                 if (WSAGetLastError() != WSAEWOULDBLOCK) {
                     // Ignore WSAEWOULDBLOCK, it is not an actual error
-                    PrintError("'send' failed with error: %d.", WSAGetLastError());
+                    PrintError("[WorkerHandlerThread] 'send' failed with error: %d.", WSAGetLastError());
 
                     break;
                 }
@@ -75,7 +75,7 @@ DWORD WINAPI WorkerHandlerThread(LPVOID lpParam) {
     PrintDebug("Notifying worker of server shutdown.");
     sendResult = send(workerSocket, SERVER_SHUTDOWN_MESSAGE, (int)strlen(SERVER_SHUTDOWN_MESSAGE) + 1, 0);
     if (sendResult == SOCKET_ERROR) {
-        PrintError("'send' failed with error: %d.", WSAGetLastError());
+        PrintError("[WorkerHandlerThread] 'send' failed with error: %d.", WSAGetLastError());
     }
 
     // Close the worker socket

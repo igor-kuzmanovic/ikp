@@ -33,7 +33,7 @@ DWORD WINAPI SenderThread(LPVOID lpParam) {
         } else {
             if (WSAGetLastError() != WSAEWOULDBLOCK) {
                 // Ignore WSAEWOULDBLOCK, it is not an actual error
-                PrintError("'send' failed with error: %d.", WSAGetLastError());
+                PrintError("[SenderThread] 'send' failed with error: %d.", WSAGetLastError());
 
                 break;
             }

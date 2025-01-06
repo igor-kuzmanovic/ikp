@@ -13,11 +13,11 @@
 
 // Logging levels
 
-#define LOG_LEVEL_DEBUG     0
-#define LOG_LEVEL_INFO      1
-#define LOG_LEVEL_WARNING   2
-#define LOG_LEVEL_ERROR     3
-#define LOG_LEVEL_CRITICAL  4
+#define LOG_LEVEL_DEBUG     0x0
+#define LOG_LEVEL_INFO      0x1
+#define LOG_LEVEL_WARNING   0x2
+#define LOG_LEVEL_ERROR     0x3
+#define LOG_LEVEL_CRITICAL  0x4
 
 // Set the default logging level, to override it set define LOG_LEVEL before importing the header
 // This doesn't quite work at the moment but might be useful if we figure out how to override it per project

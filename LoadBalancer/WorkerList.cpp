@@ -14,10 +14,18 @@ int InitializeWorkerList(WorkerList* list) {
     list->head = NULL;
     list->current = NULL;
     list->count = 0;
+    list->nextGeneratedId = 1;
 
-    list->semaphore = CreateSemaphore(NULL, 0, MAX_WORKERS, NULL);
-    if (list->semaphore == NULL) {
-        PrintCritical("Failed to create a semaphore for the worker list.");
+    list->notEmpty = CreateSemaphore(NULL, 0, MAX_WORKERS, NULL);
+    if (list->notEmpty == NULL) {
+        PrintCritical("Failed to create a 'notEmpty' semaphore for the worker list.");
+
+        return GetLastError();
+    }
+
+    list->notFull = CreateSemaphore(NULL, MAX_WORKERS, MAX_WORKERS, NULL);
+    if (list->notFull == NULL) {
+        PrintCritical("Failed to create a 'notFull' semaphore for the worker list.");
 
         return GetLastError();
     }
@@ -50,8 +58,10 @@ int DestroyWorkerList(WorkerList* list) {
     list->head = NULL;
     list->current = NULL;
     list->count = 0;
+    list->nextGeneratedId = 1;
 
-    CloseHandle(list->semaphore);
+    CloseHandle(list->notFull);
+    CloseHandle(list->notEmpty);
 
     LeaveCriticalSection(&list->lock);
     DeleteCriticalSection(&list->lock);
@@ -74,13 +84,26 @@ int AddWorker(WorkerList* list, SOCKET workerSocket) {
         return -1;
     }
 
-    PrintDebug("Entering the worker list critical section.");
+    // Wait for the signal that there is a free slot in the list
+    DWORD waitResult = WaitForSingleObject(list->notFull, WORKER_LIST_ADD_TIMEOUT);
+
+    if (waitResult == WAIT_TIMEOUT) {
+        // List is full
+
+        return 0;
+    }
+
+    if (waitResult != WAIT_OBJECT_0) {
+        PrintError("Failed to add the worker in the worker list.");
+
+        return -1;
+    }
+
     EnterCriticalSection(&list->lock);
 
     if (list->count >= MAX_WORKERS) {
-        PrintError("Worker list is at maximum capacity (%d).", MAX_WORKERS);
+        PrintError("Worker list is at maximum capacity (%d) after semaphore signal.", MAX_WORKERS);
 
-        PrintDebug("Leaving the worker list critical section.");
         LeaveCriticalSection(&list->lock);
 
         return -1;
@@ -91,12 +114,12 @@ int AddWorker(WorkerList* list, SOCKET workerSocket) {
     if (!newNode) {
         PrintError("Failed to allocate memory for a new worker node.");
 
-        PrintDebug("Leaving the worker list critical section.");
         LeaveCriticalSection(&list->lock);
 
         return -1;
     }
 
+    newNode->id = list->nextGeneratedId++;
     newNode->socket = workerSocket;
 
     if (list->head == NULL) {
@@ -115,31 +138,44 @@ int AddWorker(WorkerList* list, SOCKET workerSocket) {
     }
     list->count++;
 
-    PrintDebug("Signaling that a worker is available.");
-    ReleaseSemaphore(list->semaphore, 1, NULL);
-
-    PrintDebug("Leaving the worker list critical section.");
     LeaveCriticalSection(&list->lock);
+
+    PrintDebug("Signaling that there is a worker available in the worker list.");
+    ReleaseSemaphore(list->notEmpty, 1, NULL);
 
     PrintDebug("Worker list: %d/%d", list->count, MAX_WORKERS);
 
     return 0;
 }
 
-int RemoveWorker(WorkerList* list, SOCKET workerSocket) {
+int RemoveWorker(WorkerList* list, int id) {
     if (list == NULL) {
         PrintError("Invalid worker list provided to 'RemoveWorker'.");
 
         return -1;
     }
 
-    if (workerSocket == INVALID_SOCKET) {
-        PrintError("Invalid socket provided to 'RemoveWorker'.");
-    
+    if (id <= 0) {
+        PrintError("Invalid id provided to 'RemoveWorker'.");
+
         return -1;
     }
 
-    PrintDebug("Entering the worker list critical section.");
+    // Wait for the signal that there is a worker in the list
+    DWORD waitResult = WaitForSingleObject(list->notEmpty, WORKER_LIST_REMOVE_TIMEOUT);
+
+    if (waitResult == WAIT_TIMEOUT) {
+        // List is empty
+
+        return 0;
+    }
+
+    if (waitResult != WAIT_OBJECT_0) {
+        PrintError("Failed to remove the worker from the worker list.");
+
+        return -1;
+    }
+
     EnterCriticalSection(&list->lock);
 
     WorkerNode* temp = list->head;
@@ -147,8 +183,8 @@ int RemoveWorker(WorkerList* list, SOCKET workerSocket) {
 
     if (temp) {
         do {
-            if (temp->socket == workerSocket) {
-                PrintDebug("Found the worker to remove: socket %d.", workerSocket);
+            if (temp->id == id) {
+                PrintDebug("Found the worker to remove: id %d, socket %d.", id, temp->socket);
                 isFound = true;
 
                 if (temp == list->head && temp->next == list->head) {
@@ -169,7 +205,7 @@ int RemoveWorker(WorkerList* list, SOCKET workerSocket) {
                 free(temp);
                 list->count--;
 
-                PrintDebug("Worker removed: socket %d.", workerSocket);
+                PrintDebug("Worker removed: id %d.", id);
 
                 break;
             }
@@ -178,16 +214,16 @@ int RemoveWorker(WorkerList* list, SOCKET workerSocket) {
         } while (temp != list->head);
     }
 
-    PrintDebug("Leaving the worker list critical section.");
     LeaveCriticalSection(&list->lock);
 
+    PrintDebug("Signaling that there is a free slot in the worker list.");
+    ReleaseSemaphore(list->notFull, 1, NULL);
+
     if (!isFound) {
-        PrintWarning("Worker with socket %d not found.", workerSocket);
+        PrintWarning("Worker with id %d not found.", id);
 
         return -1;
     }
-
-    WaitForSingleObject(list->semaphore, 0);
 
     PrintDebug("Worker list: %d/%d", list->count, MAX_WORKERS);
 
@@ -207,28 +243,11 @@ int GetNextWorker(WorkerList* list, WorkerNode* worker) {
         return -1;
     }
 
-    // Wait for a signal that a worker is available
-    DWORD waitResult = WaitForSingleObject(list->semaphore, WORKER_LIST_GET_TIMEOUT);
-
-    if (waitResult == WAIT_TIMEOUT) {
-        // No worker is available
-
-        return 0;
-    }
-
-    if (waitResult != WAIT_OBJECT_0) {
-        PrintError("Failed to get the next worker.");
-
-        return -1;
-    }
-
-    PrintDebug("Entering the worker list critical section.");
     EnterCriticalSection(&list->lock);
 
     if (list->count == 0 || list->current == NULL) {
         PrintError("Worker list is empty after semaphore signal.");
 
-        PrintDebug("Leaving the worker list critical section.");
         LeaveCriticalSection(&list->lock);
 
         return -1;
@@ -237,15 +256,66 @@ int GetNextWorker(WorkerList* list, WorkerNode* worker) {
     PrintDebug("Getting the next worker.");
     WorkerNode* currentNode = list->current;
     list->current = list->current->next;
+    worker->id = currentNode->id;
     worker->socket = currentNode->socket;
 
-    PrintDebug("Leaving the worker list critical section.");
     LeaveCriticalSection(&list->lock);
 
     PrintDebug("Worker list: %d/%d", list->count, MAX_WORKERS);
 
-    // TODO Remove this later
-    ReleaseSemaphore(list->semaphore, 1, NULL);
-
     return 1;
+}
+
+int IterateWorkersOnce(WorkerList* list, WorkerNode** iterator) {
+    if (list == NULL) {
+        PrintError("Invalid worker list provided to 'IterateWorkers'.");
+
+        return -1;
+    }
+
+    int id = 0;
+
+    EnterCriticalSection(&list->lock);
+
+    if (list->count == 0) {
+        PrintDebug("Worker list is empty.");
+
+        LeaveCriticalSection(&list->lock);
+
+        return id;
+    }
+
+    if (*iterator == NULL) {
+        // If current is NULL, start from the head of the list
+        *iterator = list->head;
+        id = (*iterator)->id;
+    } else if ((*iterator)->next == list->head) {
+        // If we have looped back to the head node, stop and return NULL
+        *iterator = NULL;
+        id = 0;
+    } else {
+        // Move to the next worker in the list
+        *iterator = (*iterator)->next;
+        id = (*iterator)->id;
+    }
+
+    LeaveCriticalSection(&list->lock);
+
+    return id;
+}
+
+int GetWorkerCount(WorkerList* list) {
+    if (list == NULL) {
+        PrintError("Invalid worker list provided to 'GetWorkerCount'.");
+
+        return -1;
+    }
+
+    EnterCriticalSection(&list->lock);
+
+    int count = list->count;
+
+    LeaveCriticalSection(&list->lock);
+
+    return count;
 }

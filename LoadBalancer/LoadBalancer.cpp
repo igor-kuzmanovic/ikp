@@ -10,7 +10,8 @@ int main(void) {
     HANDLE workerListenerThread = NULL;
     HANDLE clientListenerThread = NULL;
     HANDLE workerClientRequestDispatcherThread = NULL;
-    HANDLE threads[THREAD_COUNT] = { NULL, NULL, NULL, NULL };
+    HANDLE workerHealthCheckThread = NULL;
+    HANDLE threads[THREAD_COUNT] = { NULL, NULL, NULL, NULL, NULL };
 
     // Initialize Winsock
     PrintDebug("Initializing Winsock.");
@@ -228,6 +229,19 @@ int main(void) {
     }
     threads[3] = workerClientRequestDispatcherThread;
 
+    // Starts the worker health check thread
+    PrintDebug("Starting worker health check thread.");
+    workerHealthCheckThread = CreateThread(NULL, 0, &WorkerHealthCheckThread, &ctx, NULL, NULL);
+    if (workerHealthCheckThread == NULL) {
+        PrintCritical("'CreateThread' for WorkerHealthCheckThread failed with error: %d.", GetLastError());
+
+        // Close everything and cleanup
+        CleanupFull(&ctx, threads, THREAD_COUNT);
+
+        return EXIT_FAILURE;
+    }
+    threads[4] = workerHealthCheckThread;
+
     PrintInfo("Server initialized, waiting for clients and workers.");
 
     while (true) {
@@ -237,45 +251,7 @@ int main(void) {
 
             break;
         }
-
-        // Cleanup finished worker handler threads
-        for (int i = 0; i < ctx.workerCount; i++) {
-            DWORD exitCode;
-            if (GetExitCodeThread(ctx.workerHandlerThreads[i], &exitCode) && exitCode != STILL_ACTIVE) {
-                PrintDebug("Worker handler thread %d has finished.", i);
-                CloseHandle(ctx.workerHandlerThreads[i]);
-
-                // Shift the last thread into the current slot
-                ctx.workerHandlerThreads[i] = ctx.workerHandlerThreads[ctx.workerCount - 1];
-                ctx.workerHandlerThreads[ctx.workerCount - 1] = NULL;
-                ctx.workerCount--;
-                i--; // Recheck the current index
-            }
-        }
-
-        // Cleanup finished client handler threads
-        for (int i = 0; i < ctx.clientCount; i++) {
-            DWORD exitCode;
-            if (GetExitCodeThread(ctx.clientHandlerThreads[i], &exitCode) && exitCode != STILL_ACTIVE) {
-                PrintDebug("Client handler thread %d has finished.", i);
-                CloseHandle(ctx.clientHandlerThreads[i]);
-
-                // Shift the last thread into the current slot
-                ctx.clientHandlerThreads[i] = ctx.clientHandlerThreads[ctx.clientCount - 1];
-                ctx.clientHandlerThreads[ctx.clientCount - 1] = NULL;
-                ctx.clientCount--;
-                i--; // Recheck the current index
-            }
-        }
     };
-
-    // Wait for the client handler threads to finish
-    PrintDebug("Waiting for the client threads to finish.");
-    WaitForMultipleObjects(ctx.clientCount, ctx.clientHandlerThreads, TRUE, INFINITE);
-
-    // Wait for the worker handler threads to finish
-    PrintDebug("Waiting for the worker threads to finish.");
-    WaitForMultipleObjects(ctx.workerCount, ctx.workerHandlerThreads, TRUE, INFINITE);
 
     // Wait for threads to finish
     PrintDebug("Waiting for the threads to finish.");
@@ -332,20 +308,6 @@ static void CleanupFull(Context* ctx, HANDLE threads[], int threadCount) {
             CloseHandle(threads[i]);
             threads[i] = NULL;
         }
-    }
-
-    // Close the client handler thread handles
-    for (int i = 0; i < ctx->clientCount; i++) {
-        PrintDebug("Closing client handler thread handle %d.", i);
-        CloseHandle(ctx->clientHandlerThreads[i]);
-        ctx->clientHandlerThreads[i] = NULL;
-    }
-
-    // Close the worker handler thread handles
-    for (int i = 0; i < ctx->workerCount; i++) {
-        PrintDebug("Closing worker handler thread handle %d.", i);
-        CloseHandle(ctx->workerHandlerThreads[i]);
-        ctx->workerHandlerThreads[i] = NULL;
     }
 
     // Cleanup the context

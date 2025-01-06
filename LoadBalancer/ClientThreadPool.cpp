@@ -10,9 +10,9 @@ int InitializeClientThreadPool(ClientThreadPool* pool) {
 
     InitializeCriticalSection(&pool->lock);
 
-    pool->semaphore = CreateSemaphore(NULL, CLIENT_THREAD_POOL_SIZE, CLIENT_THREAD_POOL_SIZE, NULL);
+    pool->semaphore = CreateSemaphore(NULL, MAX_CLIENTS, MAX_CLIENTS, NULL);
 
-    for (int i = 0; i < CLIENT_THREAD_POOL_SIZE; i++) {
+    for (int i = 0; i < MAX_CLIENTS; i++) {
         pool->threads[i] = NULL;
         pool->clientSockets[i] = INVALID_SOCKET;
         pool->isAvailable[i] = true;
@@ -20,7 +20,7 @@ int InitializeClientThreadPool(ClientThreadPool* pool) {
 
     pool->count = 0;
 
-    PrintDebug("Client thread pool initialized with size: %d.", CLIENT_THREAD_POOL_SIZE);
+    PrintDebug("Client thread pool initialized with size: %d.", MAX_CLIENTS);
 
     return 0;
 }
@@ -33,15 +33,17 @@ int DestroyClientThreadPool(ClientThreadPool* pool) {
     }
 
     PrintDebug("Destroying client thread pool, waiting for threads to finish.");
-    WaitForMultipleObjects(CLIENT_THREAD_POOL_SIZE, pool->threads, TRUE, INFINITE);
+    WaitForMultipleObjects(MAX_CLIENTS, pool->threads, TRUE, INFINITE);
 
     pool->count = 0;
 
-    for (int i = 0; i < CLIENT_THREAD_POOL_SIZE; i++) {
+    for (int i = 0; i < MAX_CLIENTS; i++) {
         pool->isAvailable[i] = true;
 
         if (pool->clientSockets[i] != INVALID_SOCKET) {
-            closesocket(pool->clientSockets[i]);
+            if (closesocket(pool->clientSockets[i]) == SOCKET_ERROR) {
+                PrintError("'closesocket' failed with error: %d.", WSAGetLastError());
+            }
             pool->clientSockets[i] = INVALID_SOCKET;
         }
 
@@ -94,7 +96,7 @@ int AssignClientDataReceiverThread(ClientThreadPool* pool, SOCKET clientSocket, 
     if (waitResult == WAIT_OBJECT_0) {
         EnterCriticalSection(&pool->lock);
 
-        for (int i = 0; i < CLIENT_THREAD_POOL_SIZE; i++) {
+        for (int i = 0; i < MAX_CLIENTS; i++) {
             if (pool->isAvailable[i]) {
                 pool->isAvailable[i] = false;
                 pool->clientSockets[i] = clientSocket;
@@ -129,7 +131,7 @@ int AssignClientDataReceiverThread(ClientThreadPool* pool, SOCKET clientSocket, 
                 LeaveCriticalSection(&pool->lock);
 
                 PrintDebug("Client data receiver thread assigned, thread index: %d.", i);
-                PrintDebug("Client thread pool: %d/%d.", pool->count, CLIENT_THREAD_POOL_SIZE);
+                PrintDebug("Client thread pool: %d/%d.", pool->count, MAX_CLIENTS);
 
                 return i;
             }
@@ -150,7 +152,7 @@ int ReturnClientDataReceiverThread(ClientThreadPool* pool, int threadIndex, Clie
         return -1;
     }
 
-    if (threadIndex < 0 || threadIndex >= CLIENT_THREAD_POOL_SIZE) {
+    if (threadIndex < 0 || threadIndex >= MAX_CLIENTS) {
         PrintError("Invalid thread index provided to 'ReturnClientDataReceiverThread'.");
 
         return -1;
@@ -176,7 +178,7 @@ int ReturnClientDataReceiverThread(ClientThreadPool* pool, int threadIndex, Clie
     ReleaseSemaphore(pool->semaphore, 1, NULL);
 
     PrintDebug("Client data receiver thread returned, thread index: %d.", threadIndex);
-    PrintDebug("Client thread pool: %d/%d.", pool->count, CLIENT_THREAD_POOL_SIZE);
+    PrintDebug("Client thread pool: %d/%d.", pool->count, MAX_CLIENTS);
 
     return 0;
 }
