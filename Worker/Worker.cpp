@@ -74,7 +74,7 @@ int main() {
     sockaddr_in serverAddress{};
     serverAddress.sin_family = AF_INET;
     serverAddress.sin_addr.s_addr = inet_addr(SERVER_ADDRESS);
-    serverAddress.sin_port = htons(SERVER_PORT);
+    serverAddress.sin_port = htons(SERVER_WORKER_PORT);
 
     // Retry logic for connecting to the server
     int retryCount = 1;

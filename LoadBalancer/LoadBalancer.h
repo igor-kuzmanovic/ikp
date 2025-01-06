@@ -5,7 +5,6 @@
 #include "SharedLibs.h"
 #include "ClientListenerThread.h"
 #include "InputHandlerThread.h"
-#include "WorkerHandlerThread.h"
 #include "WorkerListenerThread.h"
 
 // API

@@ -24,6 +24,9 @@
     <ClInclude Include="Protocol.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="SharedConfig.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="NetworkLib.cpp">

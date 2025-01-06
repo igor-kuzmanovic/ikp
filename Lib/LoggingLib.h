@@ -30,16 +30,16 @@
 // Functions
 
 // Helper function to print debug messages
-void PrintDebug(const char* message, ...);
+void PrintDebug(const char* namespc, const char* message, ...);
 
 // Helper function to print info messages
-void PrintInfo(const char* message, ...);
+void PrintInfo(const char* namespc, const char* message, ...);
 
 // Helper function to print warning messages
-void PrintWarning(const char* message, ...);
+void PrintWarning(const char* namespc, const char* message, ...);
 
 // Helper function to print error messages
-void PrintError(const char* message, ...);
+void PrintError(const char* namespc, const char* message, ...);
 
 // Helper function to print critical messages
-void PrintCritical(const char* message, ...);
+void PrintCritical(const char* namespc, const char* message, ...);

@@ -17,14 +17,14 @@ int InitializeClientRequestQueue(ClientRequestQueue* queue) {
 
     queue->notEmpty = CreateSemaphore(NULL, 0, CLIENT_REQUEST_QUEUE_CAPACITY, NULL);
     if (queue->notEmpty == NULL) {
-        PrintCritical("Failed to create 'notEmpty' semaphore for the client request queue.");
+        PrintCritical("Failed to create a 'notEmpty' semaphore for the client request queue.");
 
         return GetLastError();
     }
 
     queue->notFull = CreateSemaphore(NULL, CLIENT_REQUEST_QUEUE_CAPACITY, CLIENT_REQUEST_QUEUE_CAPACITY, NULL);
     if (queue->notFull == NULL) {
-        PrintCritical("Failed to create 'notFull' semaphore for the client request queue.");
+        PrintCritical("Failed to create a 'notFull' semaphore for the client request queue.");
 
         return GetLastError();
     }
@@ -79,11 +79,11 @@ int PutClientRequestQueue(ClientRequestQueue* queue, SOCKET clientSocket, const 
         return -1;
     }
 
-    PrintDebug("Waiting for a free slot in the client request queue with a %d ms timeout.", CLIENT_REQUEST_QUEUE_PUT_TIMEOUT);
+    // Wait for the signal that there is a free slot in the queue
     DWORD waitResult = WaitForSingleObject(queue->notFull, CLIENT_REQUEST_QUEUE_PUT_TIMEOUT);
 
     if (waitResult == WAIT_TIMEOUT) {
-        PrintDebug("Client request queue is full.");
+        // Queue is full
 
         return 0;
     }
@@ -137,11 +137,11 @@ int TakeClientRequestQueue(ClientRequestQueue* queue, ClientRequest* request) {
         return -1;
     }
 
-    PrintDebug("Waiting for data in the client request queue with a CLIENT_REQUEST_QUEUE_TAKE_TIMEOUT ms timeout.", CLIENT_REQUEST_QUEUE_TAKE_TIMEOUT);
+    // Wait for the signal that there is data in the queue
     DWORD waitResult = WaitForSingleObject(queue->notEmpty, CLIENT_REQUEST_QUEUE_TAKE_TIMEOUT);
 
     if (waitResult == WAIT_TIMEOUT) {
-        PrintDebug("Client request queue is empty.");
+        // Queue is empty
 
         return 0;
     }

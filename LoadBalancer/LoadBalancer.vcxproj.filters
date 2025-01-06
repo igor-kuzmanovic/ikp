@@ -18,7 +18,7 @@
     <ClCompile Include="LoadBalancer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ClientHandlerThread.cpp">
+    <ClCompile Include="_ClientHandlerThread.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="InputHandlerThread.cpp">
@@ -27,7 +27,7 @@
     <ClCompile Include="Context.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="WorkerHandlerThread.cpp">
+    <ClCompile Include="_WorkerHandlerThread.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ClientThreadPool.cpp">
@@ -56,7 +56,7 @@
     <ClInclude Include="LoadBalancer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ClientHandlerThread.h">
+    <ClInclude Include="_ClientHandlerThread.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="InputHandlerThread.h">
@@ -71,7 +71,7 @@
     <ClInclude Include="SharedLibs.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="WorkerHandlerThread.h">
+    <ClInclude Include="_WorkerHandlerThread.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ClientListenerThread.h">

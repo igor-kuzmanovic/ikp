@@ -1,4 +1,4 @@
-#include "ClientHandlerThread.h"
+#include "_ClientHandlerThread.h"
 
 DWORD WINAPI ClientHandlerThread(LPVOID lpParam) {
     PrintDebug("Client handler started.");
@@ -73,8 +73,7 @@ DWORD WINAPI ClientHandlerThread(LPVOID lpParam) {
 
     // Send shutdown notification
     PrintDebug("Notifying client of server shutdown.");
-    const char* shutdownMessage = "Server is shutting down.";
-    sendResult = send(clientSocket, shutdownMessage, (int)strlen(shutdownMessage) + 1, 0);
+    sendResult = send(clientSocket, SERVER_SHUTDOWN_MESSAGE, (int)strlen(SERVER_SHUTDOWN_MESSAGE) + 1, 0);
     if (sendResult == SOCKET_ERROR) {
         PrintError("'send' failed with error: %d.", WSAGetLastError());
     }

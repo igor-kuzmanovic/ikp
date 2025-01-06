@@ -207,11 +207,11 @@ int GetNextWorker(WorkerList* list, WorkerNode* worker) {
         return -1;
     }
 
-    PrintDebug("Waiting for a worker to be available with a %d ms timeout.", WORKER_LIST_GET_TIMEOUT);
+    // Wait for a signal that a worker is available
     DWORD waitResult = WaitForSingleObject(list->semaphore, WORKER_LIST_GET_TIMEOUT);
 
     if (waitResult == WAIT_TIMEOUT) {
-        PrintDebug("No worker is available.");
+        // No worker is available
 
         return 0;
     }

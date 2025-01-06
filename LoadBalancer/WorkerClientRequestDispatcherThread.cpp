@@ -11,10 +11,26 @@ DWORD WINAPI WorkerClientRequestDispatcherThread(LPVOID lpParam) {
     int sendResult = 0;
 
     // A variable to store the client request
-    ClientRequest* request = NULL;
+    ClientRequest* request = (ClientRequest*)malloc(sizeof(ClientRequest));
+    if (request == NULL) {
+        PrintError("Failed to allocate memory for the client request.");
+
+        return FALSE;
+    }
 
     // A variable to store the worker
-    WorkerNode* worker = NULL;
+    WorkerNode* worker = (WorkerNode*)malloc(sizeof(WorkerNode));
+    if (worker == NULL) {
+        PrintError("Failed to allocate memory for the worker node.");
+
+        free(request);
+
+        return FALSE;
+    }
+
+    // Flags to check if the request and worker are set
+    bool hasRequest = false;
+    bool hasWorker = false;
 
     while (true) {
         // Wait for the signal to stop the thread
@@ -24,90 +40,79 @@ DWORD WINAPI WorkerClientRequestDispatcherThread(LPVOID lpParam) {
             break;
         }
 
-        if (request == NULL) {
-            request = (ClientRequest*)malloc(sizeof(ClientRequest));
-            if (request == NULL) {
-                PrintError("Failed to allocate memory for the client request.");
+        // Get the next client request if needed
+        if (!hasRequest) {
+            iResult = TakeClientRequestQueue(ctx->clientRequestQueue, request);
+            if (iResult == 0) {
+                Sleep(CLIENT_REQUEST_QUEUE_EMPTY_SLEEP_TIME);
+
+                continue;
+            } else if (iResult < 0) {
+                PrintError("Failed to take the client request.");
+
+                memset(request, 0, sizeof(ClientRequest));
+
+                continue;
             } else {
-                PrintDebug("Getting next client request.");
-                iResult = TakeClientRequestQueue(ctx->clientRequestQueue, request);
-                if (iResult == 0) {
-                    PrintDebug("Client request queue is empty.");
-
-                    free(request);
-                    request = NULL;
-                } else if (iResult < 0) {
-                    PrintError("Failed to take the client request.");
-
-                    free(request);
-                    request = NULL;
-                } else {
-                    PrintDebug("Got a new client request.");
-                }
+                PrintDebug("Got a new client request.");
+                hasRequest = true;
             }
         }
 
-        if (worker == NULL) {
-            worker = (WorkerNode *)malloc(sizeof(WorkerNode));
-            if (worker == NULL) {
-                PrintError("Failed to allocate memory for the worker node.");
+        // Get the next worker if needed
+        if (!hasWorker) {
+            iResult = GetNextWorker(ctx->workerList, worker);
+            if (iResult == 0) {
+                Sleep(WORKER_LIST_EMPTY_SLEEP_TIME);
+
+                continue;
+            } else if (iResult < 0) {
+                PrintError("Failed to get the next worker.");
+
+                memset(worker, 0, sizeof(WorkerNode));
+
+                continue;
             } else {
-                PrintDebug("Getting next worker.");
-                iResult = GetNextWorker(ctx->workerList, worker);
-                if (iResult == 0) {
-                    PrintDebug("Worker list is empty.");
-
-                    free(worker);
-                    worker = NULL;
-                } else if (iResult < 0) {
-                    PrintError("Failed to get the next worker.");
-
-                    free(worker);
-                    worker = NULL;
-                } else {
-                    PrintDebug("Got the next worker.");
-                }
+                PrintDebug("Got the next worker.");
+                hasWorker = true;
             }
         }
 
         // Send the client request to the worker
-        if (request != NULL && worker != NULL) {
+        if (hasRequest && hasWorker) {
             PrintInfo("Dispatching client request from client socket %d to worker %d", request->clientSocket, worker->socket);
 
             sendResult = send(worker->socket, request->data, BUFFER_SIZE, 0);
             if (sendResult > 0) {
                 PrintInfo("Message sent to worker %d: '%s' with length %d.", worker->socket, request->data, sendResult);
 
-                free(request);
-                request = NULL;
-                free(worker);
-                worker = NULL;
-            } else if (sendResult == 0) {
+                memset(request, 0, sizeof(ClientRequest));
+                hasRequest = false;
+
+                memset(worker, 0, sizeof(WorkerNode));
+                hasWorker = false;
+            } else if (sendResult == 0 || WSAGetLastError() != WSAEWOULDBLOCK) {
                 PrintError("Worker disconnected.");
 
-                RemoveWorker(ctx->workerList, worker->socket);
+                iResult = RemoveWorker(ctx->workerList, worker->socket);
+                if (iResult < 0) {
+                    PrintError("Failed to remove the worker from the list.");
 
-                free(worker);
-                worker = NULL;
-            } else {
-                if (WSAGetLastError() != WSAEWOULDBLOCK) {
-                    // Ignore WSAEWOULDBLOCK, it is not an actual error
-                    PrintError("'send' failed with error: %d.", WSAGetLastError());
-
-                    PrintError("Worker disconnected.");
-
-                    RemoveWorker(ctx->workerList, worker->socket);
-
-                    free(worker);
-                    worker = NULL;
+                    continue;
                 }
+
+                memset(worker, 0, sizeof(WorkerNode));
+                hasWorker = false;
             }
-        } else if (request != NULL) {
+        } else if (hasRequest) {
             PrintDebug("Holding the request until a worker is available.");
-        } else if (worker != NULL) {
+        } else if (hasWorker) {
             PrintDebug("Holding the worker until a request is available.");
         }
     }
+
+    free(request);
+    free(worker);
 
     PrintDebug("Worker client request dispatcher stopped.");
 

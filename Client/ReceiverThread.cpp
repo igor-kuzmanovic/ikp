@@ -29,7 +29,7 @@ DWORD WINAPI ReceiverThread(LPVOID lpParam) {
             PrintInfo("Reply received: '%s' with length %d.", receiveBuffer, recvResult);
 
             // Check if server is shutting down
-            if (strstr(receiveBuffer, "Server is shutting down.") != NULL) {
+            if (strstr(receiveBuffer, SERVER_SHUTDOWN_MESSAGE) != NULL) {
                 PrintInfo("Server shutdown notification received.");
 
                 PrintDebug("Setting the finish signal.");
@@ -38,7 +38,7 @@ DWORD WINAPI ReceiverThread(LPVOID lpParam) {
                 break;
             }
             // Check if server is busy
-            else if (strstr(receiveBuffer, "Server is busy.") != NULL) {
+            else if (strstr(receiveBuffer, SERVER_BUSY_MESSAGE) != NULL) {
                 PrintInfo("Server is busy, pausing the sender.");
 
                 PrintDebug("Enabling the pause sender flag.");

@@ -1,4 +1,4 @@
-#include "WorkerHandlerThread.h"
+#include "_WorkerHandlerThread.h"
 
 DWORD WINAPI WorkerHandlerThread(LPVOID lpParam) {
     PrintDebug("Worker handler started.");
@@ -73,8 +73,7 @@ DWORD WINAPI WorkerHandlerThread(LPVOID lpParam) {
 
     // Send shutdown notification
     PrintDebug("Notifying worker of server shutdown.");
-    const char* shutdownMessage = "Server is shutting down.";
-    sendResult = send(workerSocket, shutdownMessage, (int)strlen(shutdownMessage) + 1, 0);
+    sendResult = send(workerSocket, SERVER_SHUTDOWN_MESSAGE, (int)strlen(SERVER_SHUTDOWN_MESSAGE) + 1, 0);
     if (sendResult == SOCKET_ERROR) {
         PrintError("'send' failed with error: %d.", WSAGetLastError());
     }

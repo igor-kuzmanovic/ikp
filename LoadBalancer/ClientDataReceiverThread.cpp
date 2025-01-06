@@ -34,12 +34,21 @@ DWORD WINAPI ClientDataReceiverThread(LPVOID lpParam) {
             PrintInfo("Message received: '%s' with length %d.", receiveBuffer, recvResult);
 
             iResult = PutClientRequestQueue(ctx->clientRequestQueue, clientSocket, receiveBuffer);
-            if (iResult == -1) {
+            if (iResult == 0) {
+                PrintError("Client request queue is full, notifying the client that the server is busy.");
+
+                PrintDebug("Notifying the client that the server is busy.");
+                send(clientSocket, SERVER_BUSY_MESSAGE, (int)strlen(SERVER_BUSY_MESSAGE) + 1, 0);
+
+                PrintDebug("Sleeping for %d ms before accepting new requests.", CLIENT_REQUEST_QUEUE_FULL_SLEEP_TIME);
+                Sleep(CLIENT_REQUEST_QUEUE_FULL_SLEEP_TIME);
+
+                continue;
+            } else if (iResult == -1) {
                 PrintError("Failed to put the request in the client request queue.");
 
                 PrintDebug("Notifying the client that the server is busy.");
-                const char* busyMessage = "Server is busy.";
-                send(clientSocket, busyMessage, (int)strlen(busyMessage) + 1, 0);
+                send(clientSocket, SERVER_BUSY_MESSAGE, (int)strlen(SERVER_BUSY_MESSAGE) + 1, 0);
 
                 PrintDebug("Sleeping for %d ms before accepting new requests.", CLIENT_REQUEST_QUEUE_FULL_SLEEP_TIME);
                 Sleep(CLIENT_REQUEST_QUEUE_FULL_SLEEP_TIME);
@@ -64,8 +73,7 @@ DWORD WINAPI ClientDataReceiverThread(LPVOID lpParam) {
 
     // Send shutdown notification
     PrintDebug("Notifying client of server shutdown.");
-    const char* shutdownMessage = "Server is shutting down.";
-    sendResult = send(clientSocket, shutdownMessage, (int)strlen(shutdownMessage) + 1, 0);
+    sendResult = send(clientSocket, SERVER_SHUTDOWN_MESSAGE, (int)strlen(SERVER_SHUTDOWN_MESSAGE) + 1, 0);
     if (sendResult == SOCKET_ERROR) {
         PrintError("'send' failed with error: %d.", WSAGetLastError());
     }

@@ -11,7 +11,18 @@
 
 #include "LoggingLib.h"
 #include "NetworkLib.h"
+#include "SharedConfig.h"
 #include "Config.h"
+
+// Logging
+
+// https://stackoverflow.com/questions/26053959/what-does-va-args-in-a-macro-mean
+#define LOGGING_NAMESPACE "LB"
+#define PrintDebug(format, ...) PrintDebug(LOGGING_NAMESPACE, format, __VA_ARGS__)
+#define PrintInfo(format, ...) PrintInfo(LOGGING_NAMESPACE, format, __VA_ARGS__)
+#define PrintWarning(format, ...) PrintWarning(LOGGING_NAMESPACE, format, __VA_ARGS__)
+#define PrintError(format, ...) PrintError(LOGGING_NAMESPACE, format, __VA_ARGS__)
+#define PrintCritical(format, ...) PrintCritical(LOGGING_NAMESPACE, format, __VA_ARGS__)
 
 // API
 
@@ -92,4 +103,3 @@ typedef struct {
 #include "ClientDataReceiverThread.h"
 #include "WorkerList.h"
 #include "WorkerClientRequestDispatcherThread.h"
-#include "WorkerHandlerThread.h"

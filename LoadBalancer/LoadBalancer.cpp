@@ -57,7 +57,9 @@ int main(void) {
 
     // Resolve the server address and port
     PrintDebug("Resolving the server address and port for worker connections.");
-    iResult = getaddrinfo(NULL, SERVER_WORKER_PORT, &hints, &ctx.workerConnectionResultingAddress);
+    char workerPortString[6]; // Need 6 characters to store the port number
+    snprintf(workerPortString, sizeof(workerPortString), "%d", SERVER_WORKER_PORT);
+    iResult = getaddrinfo(NULL, workerPortString, &hints, &ctx.workerConnectionResultingAddress);
     if (iResult != 0) {
         PrintCritical("'getaddrinfo' failed with error: %d.", iResult);
 
@@ -69,7 +71,9 @@ int main(void) {
 
     // Resolve the server address and port
     PrintDebug("Resolving the server address and port for client connections.");
-    iResult = getaddrinfo(NULL, SERVER_CLIENT_PORT, &hints, &ctx.clientConnectionResultingAddress);
+    char clientPortString[6]; // Need 6 characters to store the port number
+    snprintf(clientPortString, sizeof(clientPortString), "%d", SERVER_CLIENT_PORT);
+    iResult = getaddrinfo(NULL, clientPortString, &hints, &ctx.clientConnectionResultingAddress);
     if (iResult != 0) {
         PrintCritical("'getaddrinfo' failed with error: %d.", iResult);
 
