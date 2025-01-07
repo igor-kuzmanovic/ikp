@@ -1,71 +1,71 @@
 #include "Context.h"
 
-int ContextInitialize(Context* ctx) {
-    InitializeCriticalSection(&ctx->lock);
-    ctx->finishSignal = CreateSemaphore(0, 0, THREAD_COUNT, NULL);
-    if (ctx->finishSignal == NULL) {
+int ContextInitialize(Context* context) {
+    InitializeCriticalSection(&context->lock);
+    context->finishSignal = CreateSemaphore(0, 0, THREAD_COUNT, NULL);
+    if (context->finishSignal == NULL) {
         PrintCritical("Failed to create a semaphore for the finish signal.");
 
         return GetLastError();
     }
-    ctx->finishFlag = false;
-    ctx->connectSocket = INVALID_SOCKET;
+    context->finishFlag = false;
+    context->connectSocket = INVALID_SOCKET;
 
     return 0;
 }
 
-int ContextDestroy(Context* ctx) {
-    EnterCriticalSection(&ctx->lock);
-    ctx->connectSocket = INVALID_SOCKET;
-    if (ctx->finishSignal != NULL) {
-        CloseHandle(ctx->finishSignal);
-        ctx->finishSignal = NULL;
+int ContextDestroy(Context* context) {
+    EnterCriticalSection(&context->lock);
+    context->connectSocket = INVALID_SOCKET;
+    if (context->finishSignal != NULL) {
+        CloseHandle(context->finishSignal);
+        context->finishSignal = NULL;
     }
-    ctx->finishFlag = false;
-    LeaveCriticalSection(&ctx->lock);
-    DeleteCriticalSection(&ctx->lock);
+    context->finishFlag = false;
+    LeaveCriticalSection(&context->lock);
+    DeleteCriticalSection(&context->lock);
 
     return 0;
 }
 
-int SetFinishSignal(Context* ctx) {
-    EnterCriticalSection(&ctx->lock);
+int SetFinishSignal(Context* context) {
+    EnterCriticalSection(&context->lock);
 
     // TODO Should we track the number of active threads?
-    ReleaseSemaphore(ctx->finishSignal, THREAD_COUNT, NULL);
-    ctx->finishFlag = true;
+    ReleaseSemaphore(context->finishSignal, THREAD_COUNT, NULL);
+    context->finishFlag = true;
 
-    LeaveCriticalSection(&ctx->lock);
+    LeaveCriticalSection(&context->lock);
 
     return 0;
 }
 
-bool GetFinishFlag(Context* ctx) {
-    EnterCriticalSection(&ctx->lock);
+bool GetFinishFlag(Context* context) {
+    EnterCriticalSection(&context->lock);
 
-    bool flag = ctx->finishFlag;
+    bool flag = context->finishFlag;
 
-    LeaveCriticalSection(&ctx->lock);
+    LeaveCriticalSection(&context->lock);
 
     return flag;
 }
 
-bool GetPauseSender(Context* ctx) {
-    EnterCriticalSection(&ctx->lock);
+bool GetPauseSender(Context* context) {
+    EnterCriticalSection(&context->lock);
 
-    bool pause = ctx->pauseSender;
+    bool pause = context->pauseSender;
 
-    LeaveCriticalSection(&ctx->lock);
+    LeaveCriticalSection(&context->lock);
 
     return pause;
 }
 
-bool SetPauseSender(Context* ctx, bool pause) {
-    EnterCriticalSection(&ctx->lock);
+bool SetPauseSender(Context* context, bool pause) {
+    EnterCriticalSection(&context->lock);
 
-    ctx->pauseSender = pause;
+    context->pauseSender = pause;
 
-    LeaveCriticalSection(&ctx->lock);
+    LeaveCriticalSection(&context->lock);
 
     return true;
 }

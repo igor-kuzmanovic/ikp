@@ -9,19 +9,19 @@
 // Functions
 
 // Initializes a Context
-int ContextInitialize(Context* ctx);
+int ContextInitialize(Context* context);
 
 // Cleans up a Context
-int ContextDestroy(Context* ctx);
+int ContextDestroy(Context* context);
 
 // Sets the finish signal
-int SetFinishSignal(Context* ctx);
+int SetFinishSignal(Context* context);
 
 // Gets the finish flag
-bool GetFinishFlag(Context* ctx);
+bool GetFinishFlag(Context* context);
 
 // Gets the pause sender flag
-bool GetPauseSender(Context* ctx);
+bool GetPauseSender(Context* context);
 
 // Sets the pause sender flag
-bool SetPauseSender(Context* ctx, bool pause);
+bool SetPauseSender(Context* context, bool pause);

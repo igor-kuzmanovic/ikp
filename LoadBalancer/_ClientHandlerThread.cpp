@@ -7,7 +7,7 @@ DWORD WINAPI ClientHandlerThread(LPVOID lpParam) {
 
     // Access the socket and context
     SOCKET clientSocket = threadData->clientSocket;
-    Context* ctx = threadData->ctx;
+    Context* context = threadData->context;
 
     int iResult;
 
@@ -22,7 +22,7 @@ DWORD WINAPI ClientHandlerThread(LPVOID lpParam) {
 
     while (true) {
         // Wait for the signal to stop the thread
-        if (WaitForSingleObject(ctx->finishSignal, 0) == WAIT_OBJECT_0) {
+        if (WaitForSingleObject(context->finishSignal, 0) == WAIT_OBJECT_0) {
             PrintDebug("Stop signal received, stopping client handler.");
 
             break;

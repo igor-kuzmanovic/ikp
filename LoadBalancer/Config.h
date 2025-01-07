@@ -6,10 +6,10 @@
 
 #define INPUT_WAIT_TIME                         10      // ms
 
-#define MAX_CLIENTS                             2       // Number of clients
-#define MAX_WORKERS                             2       // Number of workers
+#define MAX_CLIENTS                             10      // Number of clients
+#define MAX_WORKERS                             1       // Number of workers
 
-#define CLIENT_REQUEST_QUEUE_CAPACITY           4
+#define CLIENT_REQUEST_QUEUE_CAPACITY           128     // Number of requests that can be stored in the queue
 #define CLIENT_REQUEST_QUEUE_PUT_TIMEOUT        10      // ms
 #define CLIENT_REQUEST_QUEUE_TAKE_TIMEOUT       10      // ms
 #define CLIENT_REQUEST_QUEUE_EMPTY_SLEEP_TIME   10      // ms

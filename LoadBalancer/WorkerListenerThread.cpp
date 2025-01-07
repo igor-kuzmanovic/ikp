@@ -3,19 +3,19 @@
 DWORD WINAPI WorkerListenerThread(LPVOID lpParam) {
     PrintDebug("Worker listener started.");
     
-    Context* ctx = (Context*)lpParam;
+    Context* context = (Context*)lpParam;
 
     int iResult;
 
     while (true) {
         // Wait for the signal to stop the thread
-        if (WaitForSingleObject(ctx->finishSignal, 0) == WAIT_OBJECT_0) {
+        if (WaitForSingleObject(context->finishSignal, 0) == WAIT_OBJECT_0) {
             PrintDebug("Stop signal received, stopping worker handler.");
 
             break;
         }
 
-        SOCKET workerSocket = accept(ctx->workerListenSocket, NULL, NULL);
+        SOCKET workerSocket = accept(context->workerListenSocket, NULL, NULL);
         if (workerSocket == INVALID_SOCKET) {
             if (WSAGetLastError() != WSAEWOULDBLOCK) {
                 // Ignore non-blocking "no connection" errors
@@ -26,9 +26,9 @@ DWORD WINAPI WorkerListenerThread(LPVOID lpParam) {
         } else {
             PrintInfo("New worker connected.");
 
-            if (ctx->workerList->count < MAX_WORKERS) {
+            if (context->workerList->count < MAX_WORKERS) {
                 PrintDebug("Adding the worker to the worker list.");
-                iResult = AddWorker(ctx->workerList, workerSocket);
+                iResult = AddWorker(context->workerList, workerSocket);
                 if (iResult == -1) {
                     PrintWarning("Cannot add worker to the worker list. Rejecting worker.");
                     

@@ -65,7 +65,7 @@ int DestroyClientThreadPool(ClientThreadPool* pool) {
     return 0;
 }
 
-int AssignClientDataReceiverThread(ClientThreadPool* pool, SOCKET clientSocket, Context* ctx) {
+int AssignClientDataReceiverThread(ClientThreadPool* pool, SOCKET clientSocket, Context* context) {
     if (pool == NULL) {
         PrintError("Invalid client thread pool provided to 'AssignClientDataReceiverThread'.");
 
@@ -78,7 +78,7 @@ int AssignClientDataReceiverThread(ClientThreadPool* pool, SOCKET clientSocket, 
         return -1;
     }
 
-    if (ctx == NULL) {
+    if (context == NULL) {
         PrintError("Invalid context provided to 'AssignClientDataReceiverThread'.");
 
         return -1;
@@ -103,13 +103,15 @@ int AssignClientDataReceiverThread(ClientThreadPool* pool, SOCKET clientSocket, 
 
                 ClientDataReceiverThreadData* data = (ClientDataReceiverThreadData*)malloc(sizeof(ClientDataReceiverThreadData));
                 if (!data) {
+                    PrintError("Failed to allocate memory for client data receiver thread data.");
+
                     LeaveCriticalSection(&pool->lock);
                     ReleaseSemaphore(pool->semaphore, 1, NULL);
 
                     return -1;
                 }
 
-                data->ctx = ctx;
+                data->context = context;
                 data->clientSocket = clientSocket;
                 data->threadIndex = i;
 

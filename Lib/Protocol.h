@@ -7,10 +7,9 @@
 #include <stdio.h>
 #include <string.h>
 
-// User-defined constants
+// Shared user libraries
 
-#define MAX_KEY_LENGTH      256
-#define MAX_VALUE_LENGTH    756
+#include "SharedConfig.h"
 
 // API
 
@@ -24,8 +23,7 @@ typedef struct {
 // Functions
 
 // Serializes the struct into a buffer
-int SerializeKVPair(const KeyValuePair* kvp, char* buffer, size_t buffer_size);
+int SerializeKVPair(const KeyValuePair* kvp, char* buffer);
 
 // Deserializes the struct from a buffer
 int DeserializeKVPair(const char* buffer, KeyValuePair* kvp);
-

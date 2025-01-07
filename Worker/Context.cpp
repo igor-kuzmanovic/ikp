@@ -1,51 +1,75 @@
 #include "Context.h"
 
-int ContextInitialize(Context* ctx) {
-    InitializeCriticalSection(&ctx->lock);
-    ctx->finishSignal = CreateSemaphore(0, 0, THREAD_COUNT, NULL);
-    if (ctx->finishSignal == NULL) {
+int ContextInitialize(Context* context) {
+    if (context == NULL) {
+        PrintError("Invalid context provided to 'ContextInitialize'.");
+
+        return -1;
+    }
+
+    InitializeCriticalSection(&context->lock);
+    context->finishSignal = CreateSemaphore(0, 0, THREAD_COUNT, NULL);
+    if (context->finishSignal == NULL) {
         PrintCritical("Failed to create a semaphore for the finish signal.");
 
         return GetLastError();
     }
-    ctx->finishFlag = false;
-    ctx->connectSocket = INVALID_SOCKET;
+    context->finishFlag = false;
+    context->connectSocket = INVALID_SOCKET;
+    context->hashTable = NULL;
+    if (InitializeHashTable(&context->hashTable) != 0) {
+        PrintCritical("Failed to initialize hash table.");
 
-    return 0;
-}
-
-int ContextDestroy(Context* ctx) {
-    EnterCriticalSection(&ctx->lock);
-    ctx->connectSocket = INVALID_SOCKET;
-    if (ctx->finishSignal != NULL) {
-        CloseHandle(ctx->finishSignal);
-        ctx->finishSignal = NULL;
+        return -1;
     }
-    ctx->finishFlag = false;
-    LeaveCriticalSection(&ctx->lock);
-    DeleteCriticalSection(&ctx->lock);
 
     return 0;
 }
 
-int SetFinishSignal(Context* ctx) {
-    EnterCriticalSection(&ctx->lock);
+int ContextDestroy(Context* context) {
+    if (context == NULL) {
+        PrintError("Invalid context provided to 'ContextDestroy'.");
+
+        return -1;
+    }
+
+    EnterCriticalSection(&context->lock);
+    if (context->hashTable != NULL) {
+        if (DestroyHashTable(context->hashTable) != 0) {
+            PrintWarning("Failed to destroy hash table.");
+        }
+        context->hashTable = NULL;
+    }
+    context->connectSocket = INVALID_SOCKET;
+    if (context->finishSignal != NULL) {
+        CloseHandle(context->finishSignal);
+        context->finishSignal = NULL;
+    }
+    context->finishFlag = false;
+    LeaveCriticalSection(&context->lock);
+    DeleteCriticalSection(&context->lock);
+
+    return 0;
+}
+
+int SetFinishSignal(Context* context) {
+    EnterCriticalSection(&context->lock);
 
     // TODO Should we track the number of active threads?
-    ReleaseSemaphore(ctx->finishSignal, THREAD_COUNT, NULL);
-    ctx->finishFlag = true;
+    ReleaseSemaphore(context->finishSignal, THREAD_COUNT, NULL);
+    context->finishFlag = true;
 
-    LeaveCriticalSection(&ctx->lock);
+    LeaveCriticalSection(&context->lock);
 
     return 0;
 }
 
-bool GetFinishFlag(Context* ctx) {
-    EnterCriticalSection(&ctx->lock);
+bool GetFinishFlag(Context* context) {
+    EnterCriticalSection(&context->lock);
 
-    bool flag = ctx->finishFlag;
+    bool flag = context->finishFlag;
 
-    LeaveCriticalSection(&ctx->lock);
+    LeaveCriticalSection(&context->lock);
 
     return flag;
 }

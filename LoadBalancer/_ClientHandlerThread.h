@@ -10,7 +10,7 @@
 
 typedef struct {
     SOCKET clientSocket; // Client socket
-    Context* ctx; // Pointer to the context
+    Context* context; // Pointer to the context
 } ClientHandlerThreadData;
 
 // Functions

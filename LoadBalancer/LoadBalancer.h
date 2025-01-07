@@ -13,4 +13,4 @@
 // Functions
 
 // Cleans up everything
-static void CleanupFull(Context* ctx, HANDLE threads[], int threadCount);
+static void CleanupFull(Context* context, HANDLE threads[], int threadCount);

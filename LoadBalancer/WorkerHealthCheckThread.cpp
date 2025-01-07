@@ -3,7 +3,7 @@
 DWORD WINAPI WorkerHealthCheckThread(LPVOID lpParam) {
     PrintDebug("[WorkerHealthCheckThread] Thread started.");
 
-    Context* ctx = (Context*)lpParam;
+    Context* context = (Context*)lpParam;
 
     int iResult;
 
@@ -15,16 +15,16 @@ DWORD WINAPI WorkerHealthCheckThread(LPVOID lpParam) {
 
     while (true) {
         // Wait for the signal to stop the thread
-        if (WaitForSingleObject(ctx->finishSignal, 0) == WAIT_OBJECT_0) {
+        if (WaitForSingleObject(context->finishSignal, 0) == WAIT_OBJECT_0) {
             PrintDebug("[WorkerHealthCheckThread] Stop signal received, stopping thread.");
 
             break;
         }
 
         // If the worker list is NULL, stop the thread
-        if (ctx->workerList == NULL) {
+        if (context->workerList == NULL) {
             break;
-        } else if (GetWorkerCount(ctx->workerList) == 0) {
+        } else if (GetWorkerCount(context->workerList) == 0) {
             Sleep(WORKER_HEALTH_CHECK_INTERVAL);
 
             continue;
@@ -32,7 +32,7 @@ DWORD WINAPI WorkerHealthCheckThread(LPVOID lpParam) {
 
         PrintInfo("[WorkerHealthCheckThread] Checking worker health.");
 
-        iResult = IterateWorkersOnce(ctx->workerList, &worker);
+        iResult = IterateWorkersOnce(context->workerList, &worker);
         if (iResult < 0) {
             PrintError("[WorkerHealthCheckThread] Failed to iterate workers.");
 
@@ -49,7 +49,7 @@ DWORD WINAPI WorkerHealthCheckThread(LPVOID lpParam) {
             } else if (sendResult == 0) {
                 PrintInfo("[WorkerHealthCheckThread] Worker disconnected.");
 
-                iResult = RemoveWorker(ctx->workerList, worker->id);
+                iResult = RemoveWorker(context->workerList, worker->id);
                 if (iResult < 0) {
                     PrintError("[WorkerHealthCheckThread] Failed to remove the worker from the list.");
                 }
@@ -69,7 +69,7 @@ DWORD WINAPI WorkerHealthCheckThread(LPVOID lpParam) {
                     // Ignore WSAEWOULDBLOCK, it is not an actual error
                     PrintInfo("[WorkerHealthCheckThread] 'send' failed with error: %d.", WSAGetLastError());
 
-                    iResult = RemoveWorker(ctx->workerList, worker->id);
+                    iResult = RemoveWorker(context->workerList, worker->id);
                     if (iResult < 0) {
                         PrintError("[WorkerHealthCheckThread] Failed to remove the worker from the list.");
                     }
@@ -87,7 +87,7 @@ DWORD WINAPI WorkerHealthCheckThread(LPVOID lpParam) {
                 }
             }
 
-            iResult = IterateWorkersOnce(ctx->workerList, &worker);
+            iResult = IterateWorkersOnce(context->workerList, &worker);
             if (iResult < 0) {
                 PrintError("[WorkerHealthCheckThread] Failed to iterate workers.");
 

@@ -3,9 +3,8 @@
 // User-defined constants
 
 #define MAX_KEY_LENGTH              256
-#define MAX_VALUE_LENGTH            756
-
-#define BUFFER_SIZE                 1024
+#define MAX_VALUE_LENGTH            768
+#define BUFFER_SIZE                 (MAX_KEY_LENGTH + MAX_VALUE_LENGTH + 1) // +1 for delimiter
 
 #define SERVER_ADDRESS              "127.0.0.1"
 #define SERVER_CLIENT_PORT          5059

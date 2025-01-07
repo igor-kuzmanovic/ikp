@@ -1,19 +1,13 @@
 #include "Protocol.h"
 
-int SerializeKVPair(const KeyValuePair* kvp, char* buffer, size_t buffer_size) {
+int SerializeKVPair(const KeyValuePair* kvp, char* buffer) {
     if (!kvp || !buffer) {
         return -1;
     }
 
-    // Make sure strings are null-terminated
-    if (kvp->key[MAX_KEY_LENGTH - 1] != '\0' || kvp->value[MAX_VALUE_LENGTH - 1] != '\0') {
-        // Key or value not properly null-terminated
-        return -1;
-    }
-
     // Format "key:value\n"
-    int written = snprintf(buffer, buffer_size, "%s:%s\n", kvp->key, kvp->value);
-    if (written < 0 || (size_t)written >= buffer_size) {
+    int written = snprintf(buffer, BUFFER_SIZE, "%s:%s", kvp->key, kvp->value);
+    if (written < 0 || (int)written >= BUFFER_SIZE) {
         // Error or buffer overflow
         return -1; 
     }
@@ -26,18 +20,36 @@ int DeserializeKVPair(const char* buffer, KeyValuePair* kvp) {
         return -1;
     }
 
-    char key[MAX_KEY_LENGTH];
-    char value[MAX_VALUE_LENGTH];
-
-    // Parse the buffer with ":" as the delimiter
-    if (sscanf_s(buffer, "%255[^:]:%755[^\n]", key, (unsigned int)sizeof(key), value, (unsigned int)sizeof(value)) != 2) {
-        // Parsing failed
-        return -1;
+    const char* delimiter = strchr(buffer, ':');
+    if (delimiter == NULL) {
+        return -1; // Invalid format, no delimiter found
     }
 
-    // Copy key and value to the struct with proper null-termination
-    snprintf(kvp->key, MAX_KEY_LENGTH, "%s", key);
-    snprintf(kvp->value, MAX_VALUE_LENGTH, "%s", value);
+    int keyLength = delimiter - buffer;
+    if (keyLength >= MAX_KEY_LENGTH) {
+        return -1; // Key too long
+    }
+
+    if (strncpy_s(kvp->key, MAX_KEY_LENGTH, buffer, keyLength) != 0) {
+        return -1; // Error during copying
+    }
+    kvp->key[keyLength] = '\0';  // Ensure null-termination of the key
+
+    const char* valueStart = delimiter + 1;
+
+    int valueLength = strlen(valueStart);
+    if (valueLength >= MAX_VALUE_LENGTH) {
+        return -1; // Value too long
+    }
+
+    if (strncpy_s(kvp->value, MAX_VALUE_LENGTH, valueStart, valueLength) != 0) {
+        return -1; // Error during copying
+    }
+    kvp->value[valueLength] = '\0';  // Ensure null-termination of the value
+
+    if (kvp->key[0] == '\0' || kvp->value[0] == '\0') {
+        return -1; // Invalid key-value pair
+    }
 
     return 0;
 }

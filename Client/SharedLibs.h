@@ -11,6 +11,7 @@
 
 #include "LoggingLib.h"
 #include "NetworkLib.h"
+#include "Protocol.h"
 #include "SharedConfig.h"
 #include "Config.h"
 
@@ -38,7 +39,7 @@ typedef struct {
 
 // Functions
 
-int GenerateClientMessage(SOCKET clientSocket, char* buffer, size_t bufferSize, int id);
+int GenerateClientMessage(SOCKET clientSocket, char* buffer, int id);
 
 // User libraries
 

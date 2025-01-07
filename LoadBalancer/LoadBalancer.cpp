@@ -23,26 +23,26 @@ int main(void) {
     }
 
     // Initialize a shared context
-    Context ctx{};
+    Context context{};
     PrintDebug("Initializing a shared context.");
-    iResult = ContextInitialize(&ctx);
+    iResult = ContextInitialize(&context);
     if (iResult != 0) {
         PrintCritical("Failed to initialize the context.");
 
         // Close everything and cleanup
-        CleanupFull(&ctx, threads, THREAD_COUNT);
+        CleanupFull(&context, threads, THREAD_COUNT);
 
         return EXIT_FAILURE;
     }
 
     // Start input handler thread
     PrintDebug("Starting the input handler thread.");
-    inputHandlerThread = CreateThread(NULL, 0, InputHandlerThread, &ctx, 0, NULL);
+    inputHandlerThread = CreateThread(NULL, 0, InputHandlerThread, &context, 0, NULL);
     if (inputHandlerThread == NULL) {
         PrintCritical("'CreateThread' failed with error: %d.", GetLastError());
 
         // Close everything and cleanup
-        CleanupFull(&ctx, threads, THREAD_COUNT);
+        CleanupFull(&context, threads, THREAD_COUNT);
 
         return EXIT_FAILURE;
     }
@@ -60,12 +60,12 @@ int main(void) {
     PrintDebug("Resolving the server address and port for worker connections.");
     char workerPortString[6]; // Need 6 characters to store the port number
     snprintf(workerPortString, sizeof(workerPortString), "%d", SERVER_WORKER_PORT);
-    iResult = getaddrinfo(NULL, workerPortString, &hints, &ctx.workerConnectionResultingAddress);
+    iResult = getaddrinfo(NULL, workerPortString, &hints, &context.workerConnectionResultingAddress);
     if (iResult != 0) {
         PrintCritical("'getaddrinfo' failed with error: %d.", iResult);
 
         // Close everything and cleanup
-        CleanupFull(&ctx, threads, THREAD_COUNT);
+        CleanupFull(&context, threads, THREAD_COUNT);
 
         return EXIT_FAILURE;
     }
@@ -74,92 +74,92 @@ int main(void) {
     PrintDebug("Resolving the server address and port for client connections.");
     char clientPortString[6]; // Need 6 characters to store the port number
     snprintf(clientPortString, sizeof(clientPortString), "%d", SERVER_CLIENT_PORT);
-    iResult = getaddrinfo(NULL, clientPortString, &hints, &ctx.clientConnectionResultingAddress);
+    iResult = getaddrinfo(NULL, clientPortString, &hints, &context.clientConnectionResultingAddress);
     if (iResult != 0) {
         PrintCritical("'getaddrinfo' failed with error: %d.", iResult);
 
         // Close everything and cleanup
-        CleanupFull(&ctx, threads, THREAD_COUNT);
+        CleanupFull(&context, threads, THREAD_COUNT);
 
         return EXIT_FAILURE;
     }
 
     // Create a socket for the server to listen for worker connections
     PrintDebug("Creating the listen socket for worker connections.");
-    ctx.workerListenSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    if (ctx.workerListenSocket == INVALID_SOCKET) {
+    context.workerListenSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if (context.workerListenSocket == INVALID_SOCKET) {
         PrintCritical("'socket' failed with error: %d.", WSAGetLastError());
 
         // Close everything and cleanup
-        CleanupFull(&ctx, threads, THREAD_COUNT);
+        CleanupFull(&context, threads, THREAD_COUNT);
 
         return EXIT_FAILURE;
     }
 
     // Create a socket for the server to listen for client connections
     PrintDebug("Creating the listen socket for client connections.");
-    ctx.clientListenSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    if (ctx.clientListenSocket == INVALID_SOCKET) {
+    context.clientListenSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if (context.clientListenSocket == INVALID_SOCKET) {
         PrintCritical("'socket' failed with error: %d.", WSAGetLastError());
 
         // Close everything and cleanup
-        CleanupFull(&ctx, threads, THREAD_COUNT);
+        CleanupFull(&context, threads, THREAD_COUNT);
 
         return EXIT_FAILURE;
     }
 
     // Bind the listen socket for worker connections
     PrintDebug("Binding the listen socket for worker connections.");
-    iResult = bind(ctx.workerListenSocket, ctx.workerConnectionResultingAddress->ai_addr, (int)ctx.workerConnectionResultingAddress->ai_addrlen);
+    iResult = bind(context.workerListenSocket, context.workerConnectionResultingAddress->ai_addr, (int)context.workerConnectionResultingAddress->ai_addrlen);
     if (iResult == SOCKET_ERROR) {
         PrintCritical("'bind' failed with error: %d.", WSAGetLastError());
 
         // Close everything and cleanup
-        CleanupFull(&ctx, threads, THREAD_COUNT);
+        CleanupFull(&context, threads, THREAD_COUNT);
 
         return EXIT_FAILURE;
     }
 
     // Bind the listen socket for client connections
     PrintDebug("Binding the listen socket for client connections.");
-    iResult = bind(ctx.clientListenSocket, ctx.clientConnectionResultingAddress->ai_addr, (int)ctx.clientConnectionResultingAddress->ai_addrlen);
+    iResult = bind(context.clientListenSocket, context.clientConnectionResultingAddress->ai_addr, (int)context.clientConnectionResultingAddress->ai_addrlen);
     if (iResult == SOCKET_ERROR) {
         PrintCritical("'bind' failed with error: %d.", WSAGetLastError());
 
         // Close everything and cleanup
-        CleanupFull(&ctx, threads, THREAD_COUNT);
+        CleanupFull(&context, threads, THREAD_COUNT);
 
         return EXIT_FAILURE;
     }
 
     // Since we don't need resultingAddress for worker connections anymore, free it
-    freeaddrinfo(ctx.workerConnectionResultingAddress);
-    ctx.workerConnectionResultingAddress = NULL;
+    freeaddrinfo(context.workerConnectionResultingAddress);
+    context.workerConnectionResultingAddress = NULL;
 
     // Since we don't need resultingAddress for client connections anymore, free it
-    freeaddrinfo(ctx.clientConnectionResultingAddress);
-    ctx.clientConnectionResultingAddress = NULL;
+    freeaddrinfo(context.clientConnectionResultingAddress);
+    context.clientConnectionResultingAddress = NULL;
 
     // Set worker listen socket to listening mode
     PrintDebug("Setting the listen socket for worker connections in listening mode.");
-    iResult = listen(ctx.workerListenSocket, SOMAXCONN);
+    iResult = listen(context.workerListenSocket, SOMAXCONN);
     if (iResult == SOCKET_ERROR) {
         PrintCritical("'listen' failed with error: %d.", WSAGetLastError());
 
         // Close everything and cleanup
-        CleanupFull(&ctx, threads, THREAD_COUNT);
+        CleanupFull(&context, threads, THREAD_COUNT);
 
         return EXIT_FAILURE;
     }
 
     // Set client listen socket to listening mode
     PrintDebug("Setting the listen socket for client connections in listening mode.");
-    iResult = listen(ctx.clientListenSocket, SOMAXCONN);
+    iResult = listen(context.clientListenSocket, SOMAXCONN);
     if (iResult == SOCKET_ERROR) {
         PrintCritical("'listen' failed with error: %d.", WSAGetLastError());
 
         // Close everything and cleanup
-        CleanupFull(&ctx, threads, THREAD_COUNT);
+        CleanupFull(&context, threads, THREAD_COUNT);
 
         return EXIT_FAILURE;
     }
@@ -167,12 +167,12 @@ int main(void) {
     // Set listening socket for worker connections to non-blocking mode
     u_long socketWorkerMode = 1;
     PrintDebug("Setting the listen socket for worker connections to non-blocking mode.");
-    iResult = ioctlsocket(ctx.workerListenSocket, FIONBIO, &socketWorkerMode);
+    iResult = ioctlsocket(context.workerListenSocket, FIONBIO, &socketWorkerMode);
     if (iResult == SOCKET_ERROR) {
         PrintCritical("'ioctlsocket' failed with error: %d.", WSAGetLastError());
 
         // Close everything and cleanup
-        CleanupFull(&ctx, threads, THREAD_COUNT);
+        CleanupFull(&context, threads, THREAD_COUNT);
 
         return EXIT_FAILURE;
     }
@@ -180,24 +180,24 @@ int main(void) {
     // Set listening socket for client connections to non-blocking mode
     u_long socketClientMode = 1;
     PrintDebug("Setting the listen socket for client connections to non-blocking mode.");
-    iResult = ioctlsocket(ctx.clientListenSocket, FIONBIO, &socketClientMode);
+    iResult = ioctlsocket(context.clientListenSocket, FIONBIO, &socketClientMode);
     if (iResult == SOCKET_ERROR) {
         PrintCritical("'ioctlsocket' failed with error: %d.", WSAGetLastError());
 
         // Close everything and cleanup
-        CleanupFull(&ctx, threads, THREAD_COUNT);
+        CleanupFull(&context, threads, THREAD_COUNT);
 
         return EXIT_FAILURE;
     }
 
     // Starts listening for workers in a new thread
     PrintDebug("Starting worker listener thread.");
-    workerListenerThread = CreateThread(NULL, 0, &WorkerListenerThread, &ctx, NULL, NULL);
+    workerListenerThread = CreateThread(NULL, 0, &WorkerListenerThread, &context, NULL, NULL);
     if (workerListenerThread == NULL) {
         PrintCritical("'CreateThread' for WorkerListenerThread failed with error: %d.", GetLastError());
 
         // Close everything and cleanup
-        CleanupFull(&ctx, threads, THREAD_COUNT);
+        CleanupFull(&context, threads, THREAD_COUNT);
 
         return EXIT_FAILURE;
     }
@@ -205,12 +205,12 @@ int main(void) {
 
     // Starts listening for clients in a new thread
     PrintDebug("Starting client listener thread.");
-    clientListenerThread = CreateThread(NULL, 0, &ClientListenerThread, &ctx, NULL, NULL);
+    clientListenerThread = CreateThread(NULL, 0, &ClientListenerThread, &context, NULL, NULL);
     if (clientListenerThread == NULL) {
         PrintCritical("'CreateThread' for ClientListenerThread failed with error: %d.", GetLastError());
 
         // Close everything and cleanup
-        CleanupFull(&ctx, threads, THREAD_COUNT);
+        CleanupFull(&context, threads, THREAD_COUNT);
 
         return EXIT_FAILURE;
     }
@@ -218,12 +218,12 @@ int main(void) {
 
     // Starts dispatching client requests to workers in a new thread
     PrintDebug("Starting worker client request dispatcher thread.");
-    workerClientRequestDispatcherThread = CreateThread(NULL, 0, &WorkerClientRequestDispatcherThread, &ctx, NULL, NULL);
+    workerClientRequestDispatcherThread = CreateThread(NULL, 0, &WorkerClientRequestDispatcherThread, &context, NULL, NULL);
     if (workerClientRequestDispatcherThread == NULL) {
         PrintCritical("'CreateThread' for WorkerClientRequestDispatcherThread failed with error: %d.", GetLastError());
 
         // Close everything and cleanup
-        CleanupFull(&ctx, threads, THREAD_COUNT);
+        CleanupFull(&context, threads, THREAD_COUNT);
 
         return EXIT_FAILURE;
     }
@@ -231,12 +231,12 @@ int main(void) {
 
     // Starts the worker health check thread
     PrintDebug("Starting worker health check thread.");
-    workerHealthCheckThread = CreateThread(NULL, 0, &WorkerHealthCheckThread, &ctx, NULL, NULL);
+    workerHealthCheckThread = CreateThread(NULL, 0, &WorkerHealthCheckThread, &context, NULL, NULL);
     if (workerHealthCheckThread == NULL) {
         PrintCritical("'CreateThread' for WorkerHealthCheckThread failed with error: %d.", GetLastError());
 
         // Close everything and cleanup
-        CleanupFull(&ctx, threads, THREAD_COUNT);
+        CleanupFull(&context, threads, THREAD_COUNT);
 
         return EXIT_FAILURE;
     }
@@ -246,7 +246,7 @@ int main(void) {
 
     while (true) {
         // Check stop signal
-        if (GetFinishFlag(&ctx)) {
+        if (GetFinishFlag(&context)) {
             PrintDebug("Stop signal received, stopping accepting new clients and workers.");
 
             break;
@@ -258,7 +258,7 @@ int main(void) {
     WaitForMultipleObjects(THREAD_COUNT, threads, TRUE, INFINITE);
 
     // Close everything and cleanup
-    CleanupFull(&ctx, threads, THREAD_COUNT);
+    CleanupFull(&context, threads, THREAD_COUNT);
 
     PrintDebug("Load balancer stopped.");
 
@@ -270,35 +270,35 @@ int main(void) {
 }
 
 // Full cleanup helper function
-static void CleanupFull(Context* ctx, HANDLE threads[], int threadCount) {
+static void CleanupFull(Context* context, HANDLE threads[], int threadCount) {
     // Close the listen socket for worker connections
-    if (ctx->workerListenSocket != INVALID_SOCKET) {
+    if (context->workerListenSocket != INVALID_SOCKET) {
         // Close the listen socket for worker connections
         PrintDebug("Closing the listen socket for worker connections.");
-        if (closesocket(ctx->workerListenSocket) == SOCKET_ERROR) {
+        if (closesocket(context->workerListenSocket) == SOCKET_ERROR) {
             PrintError("'closesocket' failed with error: %d.", WSAGetLastError());
         }
     }
 
     // Close the listen socket for client connections
-    if (ctx->clientListenSocket != INVALID_SOCKET) {
+    if (context->clientListenSocket != INVALID_SOCKET) {
         // Close the listen socket for client connections
         PrintDebug("Closing the listen socket for client connections.");
-        if (closesocket(ctx->clientListenSocket) == SOCKET_ERROR) {
+        if (closesocket(context->clientListenSocket) == SOCKET_ERROR) {
             PrintError("'closesocket' failed with error: %d.", WSAGetLastError());
         }
     }
 
     // Free address information for worker connections
-    if (ctx->workerConnectionResultingAddress != NULL) {
+    if (context->workerConnectionResultingAddress != NULL) {
         PrintDebug("Freeing address information.");
-        freeaddrinfo(ctx->workerConnectionResultingAddress);
+        freeaddrinfo(context->workerConnectionResultingAddress);
     }
 
     // Free address information for client connections
-    if (ctx->clientConnectionResultingAddress != NULL) {
+    if (context->clientConnectionResultingAddress != NULL) {
         PrintDebug("Freeing address information.");
-        freeaddrinfo(ctx->clientConnectionResultingAddress);
+        freeaddrinfo(context->clientConnectionResultingAddress);
     }
 
     // Close the thread handles
@@ -312,7 +312,7 @@ static void CleanupFull(Context* ctx, HANDLE threads[], int threadCount) {
 
     // Cleanup the context
     PrintDebug("Cleaning up the context.");
-    ContextDestroy(ctx);
+    ContextDestroy(context);
 
     // Cleanup Winsock
     PrintDebug("Cleaning up Winsock.");

@@ -4,7 +4,7 @@ DWORD WINAPI ReceiverThread(LPVOID lpParam) {
     PrintDebug("Receiver started.");
 
     // Context
-    Context* ctx = (Context*)lpParam;
+    Context* context = (Context*)lpParam;
 
     // Buffer used for storing incoming data
     char receiveBuffer[BUFFER_SIZE]{};
@@ -17,14 +17,14 @@ DWORD WINAPI ReceiverThread(LPVOID lpParam) {
 
     while (true) {
         // Wait for the signal to stop the thread
-        if (WaitForSingleObject(ctx->finishSignal, 0) == WAIT_OBJECT_0) {
+        if (WaitForSingleObject(context->finishSignal, 0) == WAIT_OBJECT_0) {
             PrintDebug("Stop signal received, stopping receiver.");
 
             break;
         }
 
         // Receive data from server
-        recvResult = recv(ctx->connectSocket, receiveBuffer, BUFFER_SIZE, 0);
+        recvResult = recv(context->connectSocket, receiveBuffer, BUFFER_SIZE, 0);
         if (recvResult > 0) {
             PrintInfo("Message received: '%s' with length %d.", receiveBuffer, recvResult);
 
@@ -33,7 +33,7 @@ DWORD WINAPI ReceiverThread(LPVOID lpParam) {
                 PrintInfo("Server shutdown notification received.");
 
                 PrintDebug("Setting the finish signal.");
-                SetFinishSignal(ctx);
+                SetFinishSignal(context);
 
                 break;
             }
@@ -42,7 +42,7 @@ DWORD WINAPI ReceiverThread(LPVOID lpParam) {
                 PrintInfo("Server is busy, pausing the sender.");
 
                 PrintDebug("Enabling the pause sender flag.");
-                SetPauseSender(ctx, true);
+                SetPauseSender(context, true);
 
                 PrintDebug("Sleeping for %d ms before unpausing the sender.", SERVER_FULL_SLEEP_TIME * serverFullSleepTimeMultiplier);
                 Sleep(SERVER_FULL_SLEEP_TIME * serverFullSleepTimeMultiplier);
@@ -51,7 +51,7 @@ DWORD WINAPI ReceiverThread(LPVOID lpParam) {
                 serverFullSleepTimeMultiplier *= 2;
 
                 PrintDebug("Disabling the pause sender flag.");
-                SetPauseSender(ctx, false);
+                SetPauseSender(context, false);
 
                 PrintInfo("Assuming the server is ready to receive new requests, resuming the sender.");
 

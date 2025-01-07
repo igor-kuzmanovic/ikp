@@ -7,14 +7,14 @@ DWORD WINAPI SenderThread(LPVOID lpParam) {
     PrintDebug("Sender started.");
 
     // Context
-    Context* ctx = (Context*)lpParam;
+    Context* context = (Context*)lpParam;
 
     // Send result
     int sendResult;
 
     while (true) {
         // Wait for the signal to stop the thread
-        if (WaitForSingleObject(ctx->finishSignal, 0) == WAIT_OBJECT_0) {
+        if (WaitForSingleObject(context->finishSignal, 0) == WAIT_OBJECT_0) {
             PrintDebug("Stop signal received, stopping sender.");
 
             break;
@@ -23,7 +23,7 @@ DWORD WINAPI SenderThread(LPVOID lpParam) {
         // Send an prepared message with null terminator included
         const char* message = "Hello from Worker!";
         PrintDebug("Sending a message to the server: '%s'.", message);
-        sendResult = send(ctx->connectSocket, message, (int)strlen(message) + 1, 0);
+        sendResult = send(context->connectSocket, message, (int)strlen(message) + 1, 0);
         if (sendResult > 0) {
             PrintInfo("Message sent: '%s' with length %d.", message, sendResult);
         } else if (sendResult == 0) {

@@ -11,6 +11,7 @@
 
 #include "LoggingLib.h"
 #include "NetworkLib.h"
+#include "Protocol.h"
 #include "SharedConfig.h"
 #include "Config.h"
 
@@ -28,13 +29,27 @@
 
 // Structures
 
+typedef struct DataNode {
+    char* key;                  // Dynamically allocated string for the key
+    char* value;                // Dynamically allocated string for the value
+    struct DataNode* next;      // Pointer to the next node for collision handling (chaining)
+} DataNode;
+
 typedef struct {
-    CRITICAL_SECTION lock; // Synchronization primitive
-    HANDLE finishSignal; // Finish signal
-    bool finishFlag; // Finish flag
-    SOCKET connectSocket; // Connect socket
+    DataNode** buckets;         // Array of pointers to DataNode (hash buckets)
+    int bucketCount;            // Number of buckets in the table
+    CRITICAL_SECTION* locks;    // Array of locks (one per bucket for fine-grained locking)
+} HashTable;
+
+typedef struct {
+    CRITICAL_SECTION lock;      // Synchronization primitive
+    HANDLE finishSignal;        // Finish signal
+    bool finishFlag;            // Finish flag
+    SOCKET connectSocket;       // Connect socket
+    HashTable* hashTable;       // Hash table
 } Context;
 
 // User libraries
 
 #include "Context.h"
+#include "HashTable.h"

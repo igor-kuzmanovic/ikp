@@ -3,32 +3,30 @@
 DWORD WINAPI ReceiverThread(LPVOID lpParam) {
     PrintDebug("Receiver started.");
 
-    // Context
-    Context* ctx = (Context*)lpParam;
+    Context* context = (Context*)lpParam;
 
-    // Buffer used for storing incoming data
     char receiveBuffer[BUFFER_SIZE]{};
-
-    // A variable to store the result of recv
     int recvResult = 0;
+
+    KeyValuePair kvp = {};
 
     while (true) {
         // Wait for the signal to stop the thread
-        if (WaitForSingleObject(ctx->finishSignal, 0) == WAIT_OBJECT_0) {
+        if (WaitForSingleObject(context->finishSignal, 0) == WAIT_OBJECT_0) {
             PrintDebug("Stop signal received, stopping receiver.");
 
             break;
         }
 
         // Receive data from server
-        recvResult = recv(ctx->connectSocket, receiveBuffer, BUFFER_SIZE, 0);
+        recvResult = recv(context->connectSocket, receiveBuffer, BUFFER_SIZE, 0);
         if (recvResult > 0) {
             // Check if server is shutting down
             if (strstr(receiveBuffer, SERVER_SHUTDOWN_MESSAGE) != NULL) {
                 PrintInfo("Server shutdown notification received.");
 
                 PrintDebug("Setting the finish signal.");
-                SetFinishSignal(ctx);
+                SetFinishSignal(context);
 
                 break;
             } else if (strstr(receiveBuffer, WORKER_HEALTH_CHECK_MESSAGE) != NULL) {
@@ -37,6 +35,14 @@ DWORD WINAPI ReceiverThread(LPVOID lpParam) {
                 continue;
             } else {
                 PrintInfo("Client request received: '%s' with length %d.", receiveBuffer, recvResult);
+
+                if (DeserializeKVPair(receiveBuffer, &kvp) != 0) {
+                    PrintError("Deserialization failed.");
+
+                    continue;
+                }
+
+                SetHashTable(context->hashTable, kvp.key, kvp.value);
             }
         } else if (recvResult == 0) {
             PrintInfo("Server closed the connection.");

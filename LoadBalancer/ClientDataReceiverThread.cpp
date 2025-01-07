@@ -6,7 +6,7 @@ DWORD WINAPI ClientDataReceiverThread(LPVOID lpParam) {
     ClientDataReceiverThreadData* threadData = (ClientDataReceiverThreadData*)lpParam;
 
     SOCKET clientSocket = threadData->clientSocket;
-    Context* ctx = threadData->ctx;
+    Context* context = threadData->context;
     int threadIndex = threadData->threadIndex;
 
     int iResult;
@@ -22,7 +22,7 @@ DWORD WINAPI ClientDataReceiverThread(LPVOID lpParam) {
 
     while (true) {
         // Wait for the signal to stop the thread
-        if (WaitForSingleObject(ctx->finishSignal, 0) == WAIT_OBJECT_0) {
+        if (WaitForSingleObject(context->finishSignal, 0) == WAIT_OBJECT_0) {
             PrintDebug("Stop signal received, stopping client data receiver.");
 
             break;
@@ -33,7 +33,7 @@ DWORD WINAPI ClientDataReceiverThread(LPVOID lpParam) {
         if (recvResult > 0) {
             PrintInfo("Message received: '%s' with length %d.", receiveBuffer, recvResult);
 
-            iResult = PutClientRequestQueue(ctx->clientRequestQueue, clientSocket, receiveBuffer);
+            iResult = PutClientRequestQueue(context->clientRequestQueue, clientSocket, receiveBuffer, recvResult);
             if (iResult == 0) {
                 PrintError("Client request queue is full, notifying the client that the server is busy.");
 
@@ -86,7 +86,7 @@ DWORD WINAPI ClientDataReceiverThread(LPVOID lpParam) {
     }
 
     // Return the thread to the pool
-    ReturnClientDataReceiverThread(ctx->clientThreadPool, threadIndex, threadData);
+    ReturnClientDataReceiverThread(context->clientThreadPool, threadIndex, threadData);
 
     PrintDebug("Client data receiver stopped.");
 

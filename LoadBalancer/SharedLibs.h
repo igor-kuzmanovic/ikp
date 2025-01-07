@@ -84,13 +84,13 @@ typedef struct {
 } Context;
 
 typedef struct {
-    Context* ctx;           // Pointer to the context
+    Context* context;           // Pointer to the context
     SOCKET clientSocket;    // Client socket
     int threadIndex;        // Index of the thread in the thread pool
 } ClientDataReceiverThreadData;
 
 typedef struct {
-    Context* ctx;           // Pointer to the context
+    Context* context;           // Pointer to the context
     SOCKET workerSocket;    // Worker socket
 } WorkerHandlerThreadData;
 

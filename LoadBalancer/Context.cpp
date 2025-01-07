@@ -1,129 +1,153 @@
 #include "Context.h"
 
-int ContextInitialize(Context* ctx) {
-    if (ctx == NULL) {
+int ContextInitialize(Context* context) {
+    if (context == NULL) {
         PrintError("Invalid context provided to 'ContextInitialize'.");
 
         return -1;
     }
 
-    InitializeCriticalSection(&ctx->lock);
+    InitializeCriticalSection(&context->lock);
 
-    ctx->finishSignal = CreateSemaphore(0, 0, MAX_CLIENTS + MAX_WORKERS + THREAD_COUNT, NULL);
-    if (ctx->finishSignal == NULL) {
+    context->finishSignal = CreateSemaphore(0, 0, MAX_CLIENTS + MAX_WORKERS + THREAD_COUNT, NULL);
+    if (context->finishSignal == NULL) {
         PrintCritical("Failed to create a semaphore for the finish signal.");
 
         return GetLastError();
     }
 
-    ctx->finishFlag = false;
+    context->finishFlag = false;
 
-    ctx->clientListenSocket = INVALID_SOCKET;
+    context->clientListenSocket = INVALID_SOCKET;
 
-    ctx->workerListenSocket = INVALID_SOCKET;
+    context->workerListenSocket = INVALID_SOCKET;
 
-    ctx->clientConnectionResultingAddress = NULL;
+    context->clientConnectionResultingAddress = NULL;
 
-    ctx->workerConnectionResultingAddress = NULL;
+    context->workerConnectionResultingAddress = NULL;
 
-    ctx->workerList = (WorkerList*)malloc(sizeof(WorkerList));
-    if (ctx->workerList == NULL) {
+    context->workerList = (WorkerList*)malloc(sizeof(WorkerList));
+    if (context->workerList == NULL) {
         PrintCritical("Failed to allocate memory for WorkerList.");
 
         return -1;
     }
-    InitializeWorkerList(ctx->workerList);
+    if (InitializeWorkerList(context->workerList) != 0) {
+        PrintCritical("Failed to initialize WorkerList.");
 
-    ctx->clientThreadPool = (ClientThreadPool*)malloc(sizeof(ClientThreadPool));
-    if (ctx->clientThreadPool == NULL) {
+        return -1;
+    }
+
+    context->clientThreadPool = (ClientThreadPool*)malloc(sizeof(ClientThreadPool));
+    if (context->clientThreadPool == NULL) {
         PrintCritical("Failed to allocate memory for ClientThreadPool.");
 
         return -1;
     }
-    InitializeClientThreadPool(ctx->clientThreadPool);
+    if (InitializeClientThreadPool(context->clientThreadPool) != 0) {
+        PrintCritical("Failed to initialize ClientThreadPool.");
 
-    ctx->clientRequestQueue = (ClientRequestQueue*)malloc(sizeof(ClientRequestQueue));
-    if (ctx->clientRequestQueue == NULL) {
+        return -1;
+    }
+
+    context->clientRequestQueue = (ClientRequestQueue*)malloc(sizeof(ClientRequestQueue));
+    if (context->clientRequestQueue == NULL) {
         PrintCritical("Failed to allocate memory for ClientRequestQueue.");
 
         return -1;
     }
-    InitializeClientRequestQueue(ctx->clientRequestQueue);
+    if (InitializeClientRequestQueue(context->clientRequestQueue) != 0) {
+        PrintCritical("Failed to initialize ClientRequestQueue.");
+
+        return -1;
+    }
 
     return 0;
 }
 
-int ContextDestroy(Context* ctx) {
-    if (ctx == NULL) {
+int ContextDestroy(Context* context) {
+    if (context == NULL) {
         PrintError("Invalid context provided to 'ContextDestroy'.");
 
         return -1;
     }
 
-    EnterCriticalSection(&ctx->lock);
+    EnterCriticalSection(&context->lock);
 
-    DestroyWorkerList(ctx->workerList);
-    free(ctx->workerList);
-    ctx->workerList = NULL;
-
-    DestroyClientRequestQueue(ctx->clientRequestQueue);
-    free(ctx->clientRequestQueue);
-    ctx->clientRequestQueue = NULL;
-
-    DestroyClientThreadPool(ctx->clientThreadPool);
-    free(ctx->clientThreadPool);
-    ctx->clientThreadPool = NULL;
-
-    ctx->workerConnectionResultingAddress = NULL;
-
-    ctx->clientConnectionResultingAddress = NULL;
-
-    ctx->workerListenSocket = INVALID_SOCKET;
-
-    ctx->clientListenSocket = INVALID_SOCKET;
-
-    ctx->finishFlag = false;
-
-    if (ctx->finishSignal != NULL) {
-        CloseHandle(ctx->finishSignal);
-        ctx->finishSignal = NULL;
+    if (context->workerList != NULL) {
+        if (DestroyWorkerList(context->workerList) != 0) {
+            PrintWarning("Failed to destroy WorkerList.");
+        }
+        free(context->workerList);
+        context->workerList = NULL;
     }
 
-    LeaveCriticalSection(&ctx->lock);
-    DeleteCriticalSection(&ctx->lock);
+    if (context->clientRequestQueue != NULL) {
+        if (DestroyClientRequestQueue(context->clientRequestQueue) != 0) {
+            PrintWarning("Failed to destroy ClientRequestQueue.");
+        }
+        free(context->clientRequestQueue);
+        context->clientRequestQueue = NULL;
+    }
+
+    if (context->clientThreadPool != NULL) {
+        if (DestroyClientThreadPool(context->clientThreadPool) != 0) {
+            PrintWarning("Failed to destroy ClientThreadPool.");
+        }
+        free(context->clientThreadPool);
+        context->clientThreadPool = NULL;
+    }
+
+    context->workerConnectionResultingAddress = NULL;
+
+    context->clientConnectionResultingAddress = NULL;
+
+    context->workerListenSocket = INVALID_SOCKET;
+
+    context->clientListenSocket = INVALID_SOCKET;
+
+    context->finishFlag = false;
+
+    if (context->finishSignal != NULL) {
+        CloseHandle(context->finishSignal);
+        context->finishSignal = NULL;
+    }
+
+    LeaveCriticalSection(&context->lock);
+    DeleteCriticalSection(&context->lock);
 
     return 0;
 }
 
-int SetFinishSignal(Context* ctx) {
-    if (ctx == NULL) {
+int SetFinishSignal(Context* context) {
+    if (context == NULL) {
         PrintError("Invalid context provided to 'SetFinishSignal'.");
 
         return -1;
     }
 
-    EnterCriticalSection(&ctx->lock);
+    EnterCriticalSection(&context->lock);
 
-    ReleaseSemaphore(ctx->finishSignal, THREAD_COUNT, NULL);
-    ctx->finishFlag = true;
+    ReleaseSemaphore(context->finishSignal, THREAD_COUNT, NULL);
+    context->finishFlag = true;
 
-    LeaveCriticalSection(&ctx->lock);
+    LeaveCriticalSection(&context->lock);
 
     return 0;
 }
 
-bool GetFinishFlag(Context* ctx) {
-    if (ctx == NULL) {
+bool GetFinishFlag(Context* context) {
+    if (context == NULL) {
         PrintError("Invalid context provided to 'GetFinishFlag'.");
 
         return false;
     }
 
-    EnterCriticalSection(&ctx->lock);
+    EnterCriticalSection(&context->lock);
 
-    bool flag = ctx->finishFlag;
+    bool flag = context->finishFlag;
 
-    LeaveCriticalSection(&ctx->lock);
+    LeaveCriticalSection(&context->lock);
 
     return flag;
 }

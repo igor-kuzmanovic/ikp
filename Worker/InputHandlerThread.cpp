@@ -4,7 +4,7 @@ DWORD WINAPI InputHandlerThread(LPVOID lpParam) {
     PrintDebug("Input handler started.");
 
     // Context
-    Context* ctx = (Context*)lpParam;
+    Context* context = (Context*)lpParam;
 
     PrintInfo("Press 'q' to stop the worker.");
 
@@ -15,7 +15,7 @@ DWORD WINAPI InputHandlerThread(LPVOID lpParam) {
                 PrintInfo("Shutdown signal received.");
 
                 PrintDebug("Setting the finish signal.");
-                SetFinishSignal(ctx);
+                SetFinishSignal(context);
 
                 break;
             }

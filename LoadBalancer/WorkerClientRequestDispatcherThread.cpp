@@ -3,7 +3,7 @@
 DWORD WINAPI WorkerClientRequestDispatcherThread(LPVOID lpParam) {
     PrintDebug("Worker client request dispatcher started.");
 
-    Context* ctx = (Context*)lpParam;
+    Context* context = (Context*)lpParam;
 
     int iResult = 0;
 
@@ -34,7 +34,7 @@ DWORD WINAPI WorkerClientRequestDispatcherThread(LPVOID lpParam) {
 
     while (true) {
         // Wait for the signal to stop the thread
-        if (WaitForSingleObject(ctx->finishSignal, 0) == WAIT_OBJECT_0) {
+        if (WaitForSingleObject(context->finishSignal, 0) == WAIT_OBJECT_0) {
             PrintDebug("Stop signal received, stopping worker client request dispatcher.");
 
             break;
@@ -42,7 +42,7 @@ DWORD WINAPI WorkerClientRequestDispatcherThread(LPVOID lpParam) {
 
         // Get the next client request if needed
         if (!hasRequest) {
-            iResult = TakeClientRequestQueue(ctx->clientRequestQueue, request);
+            iResult = TakeClientRequestQueue(context->clientRequestQueue, request);
             if (iResult == 0) {
                 Sleep(CLIENT_REQUEST_QUEUE_EMPTY_SLEEP_TIME);
 
@@ -61,7 +61,7 @@ DWORD WINAPI WorkerClientRequestDispatcherThread(LPVOID lpParam) {
 
         // Get the next worker if needed
         if (!hasWorker) {
-            iResult = GetNextWorker(ctx->workerList, worker);
+            iResult = GetNextWorker(context->workerList, worker);
             if (iResult == 0) {
                 Sleep(WORKER_LIST_EMPTY_SLEEP_TIME);
 
@@ -82,7 +82,7 @@ DWORD WINAPI WorkerClientRequestDispatcherThread(LPVOID lpParam) {
         if (hasRequest && hasWorker) {
             PrintInfo("Dispatching client request from client socket %d to worker %d", request->clientSocket, worker->socket);
 
-            sendResult = send(worker->socket, request->data, BUFFER_SIZE, 0);
+            sendResult = send(worker->socket, request->data, (int)strlen(request->data) + 1, 0);
             if (sendResult > 0) {
                 PrintInfo("Message sent to worker %d: '%s' with length %d.", worker->socket, request->data, sendResult);
 

@@ -3,19 +3,19 @@
 DWORD WINAPI ClientListenerThread(LPVOID lpParam) {
     PrintDebug("Client listener started.");
 
-    Context* ctx = (Context*)lpParam;
+    Context* context = (Context*)lpParam;
 
     int iResult;
 
     while (true) {
         // Wait for the signal to stop the thread
-        if (WaitForSingleObject(ctx->finishSignal, 0) == WAIT_OBJECT_0) {
+        if (WaitForSingleObject(context->finishSignal, 0) == WAIT_OBJECT_0) {
             PrintDebug("Stop signal received, stopping client handler.");
 
             break;
         }
 
-        SOCKET clientSocket = accept(ctx->clientListenSocket, NULL, NULL);
+        SOCKET clientSocket = accept(context->clientListenSocket, NULL, NULL);
         if (clientSocket == INVALID_SOCKET) {
             if (WSAGetLastError() != WSAEWOULDBLOCK) {
                 // Ignore non-blocking "no connection" errors
@@ -26,9 +26,9 @@ DWORD WINAPI ClientListenerThread(LPVOID lpParam) {
         } else {
             PrintInfo("New client connected.");
 
-            if (ctx->clientThreadPool->count < MAX_CLIENTS) {
+            if (context->clientThreadPool->count < MAX_CLIENTS) {
                 PrintDebug("Assigning the client to a client data receiver thread.");
-                iResult = AssignClientDataReceiverThread(ctx->clientThreadPool, clientSocket, ctx);
+                iResult = AssignClientDataReceiverThread(context->clientThreadPool, clientSocket, context);
                 if (iResult == -1) {
                     PrintWarning("Cannot assign client to a client data receiver thread. Rejecting client.");
 

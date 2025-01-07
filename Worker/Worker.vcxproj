@@ -132,6 +132,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Context.cpp" />
+    <ClCompile Include="HashTable.cpp" />
     <ClCompile Include="InputHandlerThread.cpp" />
     <ClCompile Include="ReceiverThread.cpp" />
     <ClCompile Include="SenderThread.cpp" />
@@ -140,6 +141,7 @@
   <ItemGroup>
     <ClInclude Include="Config.h" />
     <ClInclude Include="Context.h" />
+    <ClInclude Include="HashTable.h" />
     <ClInclude Include="InputHandlerThread.h" />
     <ClInclude Include="ReceiverThread.h" />
     <ClInclude Include="SenderThread.h" />
