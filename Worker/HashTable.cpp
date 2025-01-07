@@ -15,35 +15,52 @@ static unsigned int HashFunction(const char* value) {
     return hash;
 }
 
-// Prints out the hash table by printing out:
-//  - Each bucket
-//  - Each key-value pair in each bucket
-//  - Number of key-value pairs in each bucket if it's not empty
-// Also prints out the size of memory allocated for the hash table in human-friendly format.
+// TODO Remove later or make it actually useful
 static void PrintHashTable(const HashTable* table) {
     if (table == NULL) {
         PrintError("Invalid hash table provided to 'PrintHashTable'.");
         return;
     }
+
     size_t totalSize = sizeof(HashTable) + table->bucketCount * sizeof(DataNode*) + table->bucketCount * sizeof(CRITICAL_SECTION);
+    int totalItems = 0;
+
+    PrintDebug("\nHash Table Status:");
+    PrintDebug("------------------------");
+
+    // Iterate through each bucket
     for (int i = 0; i < table->bucketCount; i++) {
         EnterCriticalSection(&table->locks[i]);
+
         DataNode* node = table->buckets[i];
-        int count = 0;
+        int bucketSize = 0;
+        int bucketCount = 0;
+
+        // Count the key-value pairs in the current bucket
         while (node) {
-            count++;
-            PrintDebug("Bucket %d: Key: %s.", i, node->key);
-            totalSize += sizeof(DataNode) + strlen(node->key) + 1 + strlen(node->value) + 1;
+            bucketSize += strlen(node->key) + 1 + strlen(node->value) + 1; // Size for key, value, and null terminators
+            bucketCount++;
             node = node->next;
         }
-        if (count > 0) {
-            PrintDebug("Bucket %d: %d key-value pairs.", i, count);
+
+        // If the bucket has items, print its stats
+        if (bucketCount > 0) {
+            PrintDebug("Bucket %d: %d items | Bucket Size: %d bytes", i, bucketCount, bucketSize);
         }
+
+        totalItems += bucketCount;
+        totalSize += bucketSize;
+
         LeaveCriticalSection(&table->locks[i]);
     }
+
+    // Print overall memory usage
     size_t totalSizeKB = totalSize / 1024;
     size_t totalSizeMB = totalSizeKB / 1024;
-    PrintDebug("Hash table size: %d bytes (%d KB, %d MB).", totalSize, totalSizeKB, totalSizeMB);
+
+    PrintDebug("------------------------");
+    PrintDebug("Total items: %d", totalItems);
+    PrintInfo("Total memory usage: %d bytes (%d KB, %d MB)", totalSize, totalSizeKB, totalSizeMB);
 }
 
 int InitializeHashTable(HashTable** table) {
@@ -111,7 +128,7 @@ int DestroyHashTable(HashTable* table) {
                 free(toDelete->key);
                 toDelete->key = NULL;
             }
-            
+
             if (toDelete->value) {
                 free(toDelete->value);
                 toDelete->value = NULL;
