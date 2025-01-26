@@ -168,8 +168,6 @@ int HasHashTable(const HashTable* table, const char* key) {
         return -1;
     }
 
-    int iResult;
-
     int bucketIndex = HashFunction(key);
 
     EnterCriticalSection(&table->locks[bucketIndex]);

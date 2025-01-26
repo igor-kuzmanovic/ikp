@@ -7,7 +7,10 @@ DWORD WINAPI ClientWorkerResponseDispatcherThread(LPVOID lpParam) {
 
     int iResult = 0;
 
-    // A variable to store the result of send
+    MessageBuffer messageBuffer{};
+    messageBuffer.message.type = MSG_KEY_VALUE_PAIR_STORED;
+    messageBuffer.message.payload.keyValuePairStored.clientId = 0;
+    SOCKET clientSocket = INVALID_SOCKET;
     int sendResult = 0;
 
     // A variable to store the worker response
@@ -41,24 +44,38 @@ DWORD WINAPI ClientWorkerResponseDispatcherThread(LPVOID lpParam) {
             PrintDebug("Got a new worker response.");
         }
 
-        PrintDebug("Sending response to client '%s'.",  response->data);
+        GetClientSocketByClientId(context->clientThreadPool, response->clientId, &clientSocket);
+        if (clientSocket == INVALID_SOCKET) {
+            PrintError("Failed to get the client socket by client id.");
 
-        // TODO Route the response with a client socket
-        //sendResult = send(client->socket, response->data, (int)strlen(response->data) + 1, 0);
-        //if (sendResult > 0) {
-        //    PrintInfo("Message sent to client %d: '%s' with length %d.", client->socket, response->data, sendResult);
+            memset(response, 0, sizeof(WorkerResponse));
 
-        //    memset(response, 0, sizeof(WorkerResponse));
-        //} else if (sendResult == 0) {
-        //    PrintError("Client disconnected.");
-        //} else {
-        //    if (WSAGetLastError() != WSAEWOULDBLOCK) {
-        //        // Ignore WSAEWOULDBLOCK, it is not an actual error
-        //        PrintError("[ClientWorkerResponseDispatchedThread] 'send' failed with error: %d.", WSAGetLastError());
-        //    }
+            continue;
+        }
 
-        //    continue;
-        //}
+        PrintDebug("Sending response to client %d on socket %d.", response->clientId, clientSocket);
+
+        messageBuffer.message.payload.keyValuePairStored.clientId = response->clientId;
+        messageBuffer.message.payload.keyValuePairStored.workerId = response->workerId; // TODO Remove this later, client doesn't need this info
+        strcpy_s(messageBuffer.message.payload.keyValuePairStored.key, response->data.message.payload.keyValuePairStored.key);
+
+        sendResult = send(clientSocket, messageBuffer.buffer, BUFFER_SIZE, 0);
+        if (sendResult > 0) {
+            PrintInfo("Message sent to client %d with length %d.", response->clientId, sendResult);
+        
+            messageBuffer.message.payload.keyValuePairStored.clientId = 0;
+            clientSocket = INVALID_SOCKET;
+            memset(response, 0, sizeof(WorkerResponse));
+        } else if (sendResult == 0) {
+            PrintError("Client disconnected.");
+        } else {
+            if (WSAGetLastError() != WSAEWOULDBLOCK) {
+                // Ignore WSAEWOULDBLOCK, it is not an actual error
+                PrintError("[ClientWorkerResponseDispatchedThread] 'send' failed with error: %d.", WSAGetLastError());
+            }
+        
+            continue;
+        }
     }
 
     free(response);

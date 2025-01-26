@@ -28,43 +28,23 @@ DWORD WINAPI ReceiverThread(LPVOID lpParam) {
             PrintInfo("Message received with length %d.", recvResult);
 
             switch (receiveMessageBuffer.message.type) {
-            case MSG_KEY_VALUE_PAIR:
-                PrintInfo("Key-Value Pair: '%s:%s'.", receiveMessageBuffer.message.payload.keyValuePair.key, receiveMessageBuffer.message.payload.keyValuePair.value);
+            case MSG_KEY_VALUE_PAIR_STORE_REQUEST:
+                PrintInfo("Key-Value Pair: '%s:%s' received from client %d.", receiveMessageBuffer.message.payload.keyValuePairStoreRequest.key, receiveMessageBuffer.message.payload.keyValuePairStoreRequest.value, receiveMessageBuffer.message.payload.keyValuePairStoreRequest.clientId);
 
-                break;
-
-            case MSG_SERVER_SHUTDOWN:
-                PrintInfo("Server Shutdown Message.");
-
-                break;
-
-            case MSG_WORKER_HEALTH_CHECK:
-                PrintInfo("Worker Health Check: Worker ID = %s.", receiveMessageBuffer.message.payload.healthCheck.workerId);
-
-                break;
-
-            case MSG_WORKER_OK:
-                PrintInfo("Worker Health Response: Is Healthy = %d.", receiveMessageBuffer.message.payload.healthResponse.isHealthy);
-
-                break;
-
-            default:
-                PrintError("Unsupported message type: %d.", receiveMessageBuffer.message.type);
-
-                break;
-            }
-
-            switch (receiveMessageBuffer.message.type) {
-            case MSG_KEY_VALUE_PAIR:
-                if (HasHashTable(context->hashTable, receiveMessageBuffer.message.payload.keyValuePair.key)) {
-                    PrintWarning("Key '%s' already exists in the hash table.", receiveMessageBuffer.message.payload.keyValuePair.key);
+                if (HasHashTable(context->hashTable, receiveMessageBuffer.message.payload.keyValuePairStoreRequest.key)) {
+                    PrintWarning("Key '%s' already exists in the hash table.", receiveMessageBuffer.message.payload.keyValuePairStoreRequest.key);
                 }
 
-                if (SetHashTable(context->hashTable, receiveMessageBuffer.message.payload.keyValuePair.key, receiveMessageBuffer.message.payload.keyValuePair.value) == 1) {
-                    PrintDebug("Stored key-value pair. Sending notification.");
+                if (SetHashTable(context->hashTable, receiveMessageBuffer.message.payload.keyValuePairStoreRequest.key, receiveMessageBuffer.message.payload.keyValuePairStoreRequest.value) == 1) {
+                    PrintDebug("Stored key-value pair. Sending notification to the client %d.", receiveMessageBuffer.message.payload.keyValuePairStoreRequest.clientId);
 
                     // TODO Remove, for debugging purposes and implement properly later
-                    send(context->connectSocket, WORKER_OK, (int)strlen(WORKER_OK) + 1, 0);
+                    MessageBuffer storedMessageBuffer{};
+                    storedMessageBuffer.message.type = MSG_KEY_VALUE_PAIR_STORED;
+                    storedMessageBuffer.message.payload.keyValuePairStored.clientId = receiveMessageBuffer.message.payload.keyValuePairStoreRequest.clientId;
+                    strcpy_s(storedMessageBuffer.message.payload.keyValuePairStored.key, receiveMessageBuffer.message.payload.keyValuePairStoreRequest.key);
+                    
+                    send(context->connectSocket, storedMessageBuffer.buffer, BUFFER_SIZE, 0);
                 } else {
                     PrintError("Failed to store key-value pair in the hash table.");
                 }
@@ -72,11 +52,15 @@ DWORD WINAPI ReceiverThread(LPVOID lpParam) {
                 break;
 
             case MSG_SERVER_SHUTDOWN:
+                PrintInfo("Server Shutdown Message.");
+
                 SetFinishSignal(context);
 
                 break;
 
             case MSG_WORKER_HEALTH_CHECK:
+                PrintInfo("Worker Health Check: Worker id = %s.", receiveMessageBuffer.message.payload.healthCheck.workerId);
+
                 // Send a health check response
                 sendResult = send(context->connectSocket, responseMessageBuffer.buffer, BUFFER_SIZE, 0);
                 if (sendResult > 0) {
@@ -93,7 +77,9 @@ DWORD WINAPI ReceiverThread(LPVOID lpParam) {
 
                 break;
             default:
-                break;
+                PrintError("Unsupported message type: %d.", receiveMessageBuffer.message.type);
+
+                continue;
             }
         } else if (recvResult == 0) {
             PrintInfo("Server closed the connection.");

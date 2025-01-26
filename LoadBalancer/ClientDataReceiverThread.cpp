@@ -6,18 +6,13 @@ DWORD WINAPI ClientDataReceiverThread(LPVOID lpParam) {
     ClientDataReceiverThreadData* threadData = (ClientDataReceiverThreadData*)lpParam;
 
     SOCKET clientSocket = threadData->clientSocket;
+    int clientId = threadData->clientId;
     Context* context = threadData->context;
     int threadIndex = threadData->threadIndex;
 
     int iResult;
-
-    // Buffer used for storing incoming data
     MessageBuffer receiveMessageBuffer{};
-
-    // A variable to store the result of recv
     int recvResult = 0;
-
-    // A variable to store the result of send
     int sendResult = 0;
 
     while (true) {
@@ -44,7 +39,7 @@ DWORD WINAPI ClientDataReceiverThread(LPVOID lpParam) {
                 continue;
             }
 
-            iResult = PutClientRequestQueue(context->clientRequestQueue, clientSocket, receiveMessageBuffer.buffer, recvResult);
+            iResult = PutClientRequestQueue(context->clientRequestQueue, clientSocket, receiveMessageBuffer.buffer, recvResult, clientId);
             if (iResult == 0) {
                 PrintError("Client request queue is full, notifying the client that the server is busy.");
 

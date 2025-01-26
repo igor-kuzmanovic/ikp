@@ -60,7 +60,7 @@ int DestroyWorkerResponseQueue(WorkerResponseQueue* queue) {
     return 0;
 }
 
-int PutWorkerResponseQueue(WorkerResponseQueue* queue, SOCKET workerSocket, const char* data, int length) {
+int PutWorkerResponseQueue(WorkerResponseQueue* queue, const SOCKET workerSocket, const char* data, const int length, const int workerId, const int clientId) {
     if (queue == NULL) {
         PrintError("Invalid worker response queue provided to 'PutWorkerResponseQueue'.");
 
@@ -106,6 +106,8 @@ int PutWorkerResponseQueue(WorkerResponseQueue* queue, SOCKET workerSocket, cons
 
     PrintDebug("Putting a response in the worker response queue.");
     queue->queue[queue->tail].workerSocket = workerSocket;
+    queue->queue[queue->tail].workerId = workerId;
+    queue->queue[queue->tail].clientId = clientId;
     memcpy(queue->queue[queue->tail].data.buffer, data, length);
 
     queue->tail = (queue->tail + 1) % WORKER_RESPONSE_QUEUE_CAPACITY;
@@ -161,6 +163,8 @@ int TakeWorkerResponseQueue(WorkerResponseQueue* queue, WorkerResponse* response
 
     PrintDebug("Taking a response from the worker response queue.");
     response->workerSocket = queue->queue[queue->head].workerSocket;
+    response->workerId = queue->queue[queue->head].workerId;
+    response->clientId = queue->queue[queue->head].clientId;
     memcpy(response->data.buffer, queue->queue[queue->head].data.buffer, BUFFER_SIZE);
 
     queue->head = (queue->head + 1) % WORKER_RESPONSE_QUEUE_CAPACITY;

@@ -12,9 +12,9 @@ int InitializeWorkerList(WorkerList* list);
 
 int DestroyWorkerList(WorkerList* list);
 
-int AddWorker(WorkerList* list, SOCKET workerSocket);
+int AddWorker(WorkerList* list, const SOCKET workerSocket, const int workerId);
 
-int RemoveWorker(WorkerList* list, int id);
+int RemoveWorker(WorkerList* list, const int workerId);
 
 int GetNextWorker(WorkerList* list, WorkerNode* worker);
 

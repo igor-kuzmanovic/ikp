@@ -77,7 +77,7 @@ int GenerateClientMessage(Message *message, const SOCKET clientSocket, const int
         return -1;
     }
 
-    KeyValuePair keyValuePair{};
+    KeyValuePairMessage keyValuePair{};
     snprintf(keyValuePair.key, keyLength + 1, "%s", key); // + 1 for null terminator
     snprintf(keyValuePair.value, valueLength + 1, "%s", value); // + 1 for null terminator
 

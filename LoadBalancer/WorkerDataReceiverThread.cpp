@@ -6,18 +6,16 @@ DWORD WINAPI WorkerDataReceiverThread(LPVOID lpParam) {
     WorkerDataReceiverThreadData* threadData = (WorkerDataReceiverThreadData*)lpParam;
 
     SOCKET workerSocket = threadData->workerSocket;
+    int workerId = threadData->workerId;
     Context* context = threadData->context;
     int threadIndex = threadData->threadIndex;
 
     int iResult;
 
-    // Buffer used for storing incoming data
-    char receiveBuffer[BUFFER_SIZE]{};
-
-    // A variable to store the result of recv
+    MessageBuffer messageBuffer{};
+    MessageBuffer serverBusyMessageBuffer{};
+    serverBusyMessageBuffer.message.type = MSG_SERVER_BUSY;
     int recvResult = 0;
-
-    // A variable to store the result of send
     int sendResult = 0;
 
     while (true) {
@@ -29,29 +27,36 @@ DWORD WINAPI WorkerDataReceiverThread(LPVOID lpParam) {
         }
 
         // Receive data from the worker
-        recvResult = recv(workerSocket, receiveBuffer, BUFFER_SIZE, 0);
+        recvResult = recv(workerSocket, messageBuffer.buffer, BUFFER_SIZE, 0);
         if (recvResult > 0) {
-            PrintInfo("Message received: '%s' with length %d.", receiveBuffer, recvResult);
+            PrintInfo("Message received with length %d.", recvResult);
 
-            iResult = PutWorkerResponseQueue(context->workerResponseQueue, workerSocket, receiveBuffer, recvResult);
-            if (iResult == 0) {
-                PrintError("Worker request queue is full, notifying the worker that the server is busy.");
+            switch (messageBuffer.message.type) {
+            case MSG_KEY_VALUE_PAIR_STORED:
+                iResult = PutWorkerResponseQueue(context->workerResponseQueue, workerSocket, messageBuffer.buffer, recvResult, workerId, messageBuffer.message.payload.keyValuePairStored.clientId);
+                if (iResult == 0) {
+                    PrintError("Worker request queue is full, notifying the worker that the server is busy.");
 
-                PrintDebug("Notifying the worker that the server is busy.");
-                send(workerSocket, SERVER_BUSY_MESSAGE, (int)strlen(SERVER_BUSY_MESSAGE) + 1, 0);
+                    PrintDebug("Notifying the worker that the server is busy.");
+                    send(workerSocket, serverBusyMessageBuffer.buffer, BUFFER_SIZE, 0);
 
-                PrintDebug("Sleeping for %d ms before accepting new requests.", WORKER_RESPONSE_QUEUE_FULL_SLEEP_TIME);
-                Sleep(WORKER_RESPONSE_QUEUE_FULL_SLEEP_TIME);
+                    PrintDebug("Sleeping for %d ms before accepting new requests.", WORKER_RESPONSE_QUEUE_FULL_SLEEP_TIME);
+                    Sleep(WORKER_RESPONSE_QUEUE_FULL_SLEEP_TIME);
 
-                continue;
-            } else if (iResult == -1) {
-                PrintError("Failed to put the request in the worker request queue.");
+                    continue;
+                } else if (iResult == -1) {
+                    PrintError("Failed to put the request in the worker request queue.");
 
-                PrintDebug("Notifying the worker that the server is busy.");
-                send(workerSocket, SERVER_BUSY_MESSAGE, (int)strlen(SERVER_BUSY_MESSAGE) + 1, 0);
+                    PrintDebug("Notifying the worker that the server is busy.");
+                    send(workerSocket, serverBusyMessageBuffer.buffer, BUFFER_SIZE, 0);
 
-                PrintDebug("Sleeping for %d ms before accepting new requests.", WORKER_RESPONSE_QUEUE_FULL_SLEEP_TIME);
-                Sleep(WORKER_RESPONSE_QUEUE_FULL_SLEEP_TIME);
+                    PrintDebug("Sleeping for %d ms before accepting new requests.", WORKER_RESPONSE_QUEUE_FULL_SLEEP_TIME);
+                    Sleep(WORKER_RESPONSE_QUEUE_FULL_SLEEP_TIME);
+
+                    continue;
+                }
+            default:
+                PrintError("Unknown message type received.");
 
                 continue;
             }

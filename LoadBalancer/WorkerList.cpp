@@ -14,7 +14,6 @@ int InitializeWorkerList(WorkerList* list) {
     list->head = NULL;
     list->current = NULL;
     list->count = 0;
-    list->nextGeneratedId = 1;
 
     list->notEmpty = CreateSemaphore(NULL, 0, MAX_WORKERS, NULL);
     if (list->notEmpty == NULL) {
@@ -58,7 +57,6 @@ int DestroyWorkerList(WorkerList* list) {
     list->head = NULL;
     list->current = NULL;
     list->count = 0;
-    list->nextGeneratedId = 1;
 
     CloseHandle(list->notFull);
     CloseHandle(list->notEmpty);
@@ -71,7 +69,7 @@ int DestroyWorkerList(WorkerList* list) {
     return 0;
 }
 
-int AddWorker(WorkerList* list, SOCKET workerSocket) {
+int AddWorker(WorkerList* list, const SOCKET workerSocket, const int workerId) {
     if (list == NULL) {
         PrintError("Invalid worker list provided to 'AddWorker'.");
 
@@ -119,8 +117,8 @@ int AddWorker(WorkerList* list, SOCKET workerSocket) {
         return -1;
     }
 
-    newNode->id = list->nextGeneratedId++;
-    newNode->socket = workerSocket;
+    newNode->workerId = workerId;
+    newNode->workerSocket = workerSocket;
 
     if (list->head == NULL) {
         PrintDebug("Adding the first worker to the list.");
@@ -148,14 +146,14 @@ int AddWorker(WorkerList* list, SOCKET workerSocket) {
     return 0;
 }
 
-int RemoveWorker(WorkerList* list, int id) {
+int RemoveWorker(WorkerList* list, const int workerId) {
     if (list == NULL) {
         PrintError("Invalid worker list provided to 'RemoveWorker'.");
 
         return -1;
     }
 
-    if (id <= 0) {
+    if (workerId <= 0) {
         PrintError("Invalid id provided to 'RemoveWorker'.");
 
         return -1;
@@ -183,8 +181,8 @@ int RemoveWorker(WorkerList* list, int id) {
 
     if (temp) {
         do {
-            if (temp->id == id) {
-                PrintDebug("Found the worker to remove: id %d, socket %d.", id, temp->socket);
+            if (temp->workerId == workerId) {
+                PrintDebug("Found the worker to remove: id %d, socket %d.", workerId, temp->workerSocket);
                 isFound = true;
 
                 if (temp == list->head && temp->next == list->head) {
@@ -205,7 +203,7 @@ int RemoveWorker(WorkerList* list, int id) {
                 free(temp);
                 list->count--;
 
-                PrintDebug("Worker removed: id %d.", id);
+                PrintDebug("Worker removed: id %d.", workerId);
 
                 break;
             }
@@ -220,7 +218,7 @@ int RemoveWorker(WorkerList* list, int id) {
     ReleaseSemaphore(list->notFull, 1, NULL);
 
     if (!isFound) {
-        PrintWarning("Worker with id %d not found.", id);
+        PrintWarning("Worker with id %d not found.", workerId);
 
         return -1;
     }
@@ -256,8 +254,8 @@ int GetNextWorker(WorkerList* list, WorkerNode* worker) {
     PrintDebug("Getting the next worker.");
     WorkerNode* currentNode = list->current;
     list->current = list->current->next;
-    worker->id = currentNode->id;
-    worker->socket = currentNode->socket;
+    worker->workerId = currentNode->workerId;
+    worker->workerSocket = currentNode->workerSocket;
 
     LeaveCriticalSection(&list->lock);
 
@@ -273,7 +271,7 @@ int IterateWorkersOnce(WorkerList* list, WorkerNode** iterator) {
         return -1;
     }
 
-    int id = 0;
+    int workerId = 0;
 
     EnterCriticalSection(&list->lock);
 
@@ -282,26 +280,26 @@ int IterateWorkersOnce(WorkerList* list, WorkerNode** iterator) {
 
         LeaveCriticalSection(&list->lock);
 
-        return id;
+        return workerId;
     }
 
     if (*iterator == NULL) {
         // If current is NULL, start from the head of the list
         *iterator = list->head;
-        id = (*iterator)->id;
+        workerId = (*iterator)->workerId;
     } else if ((*iterator)->next == list->head) {
         // If we have looped back to the head node, stop and return NULL
         *iterator = NULL;
-        id = 0;
+        workerId = 0;
     } else {
         // Move to the next worker in the list
         *iterator = (*iterator)->next;
-        id = (*iterator)->id;
+        workerId = (*iterator)->workerId;
     }
 
     LeaveCriticalSection(&list->lock);
 
-    return id;
+    return workerId;
 }
 
 int GetWorkerCount(WorkerList* list) {

@@ -30,8 +30,8 @@
 // Structures
 
 typedef struct WorkerNode {
-    int id;                     // Worker id
-    SOCKET socket;              // Worker socket
+    int workerId;                     // Worker id
+    SOCKET workerSocket;              // Worker socket
     struct WorkerNode* next;    // Next node in the list
     struct WorkerNode* prev;    // Previous node in the list
 } WorkerNode;
@@ -43,12 +43,12 @@ typedef struct {
     HANDLE notEmpty;        // Not empty signal
     HANDLE notFull;         // Not full signal
     int count;              // Number of workers
-    int nextGeneratedId;    // Next generated worker id
 } WorkerList;
 
 typedef struct {
     HANDLE threads[MAX_CLIENTS];        // Client threads
     SOCKET clientSockets[MAX_CLIENTS];  // Client sockets
+    int clientIds[MAX_CLIENTS];         // Client ids
     BOOL isAvailable[MAX_CLIENTS];      // Availability of the threads
     CRITICAL_SECTION lock;              // Protects access to the pool
     HANDLE semaphore;                   // Semaphore for synchronization
@@ -66,6 +66,7 @@ typedef struct {
 
 typedef struct {
     SOCKET clientSocket;    // Client socket
+    int clientId;           // Client id
     MessageBuffer data;     // Data from the client
 } ClientRequest;
 
@@ -81,7 +82,9 @@ typedef struct {
 
 typedef struct {
     SOCKET workerSocket;    // Worker socket
+    int workerId;           // Worker id
     MessageBuffer data;     // Data from the worker
+    int clientId;           // Client id
 } WorkerResponse;
 
 typedef struct {
@@ -113,18 +116,21 @@ typedef struct {
 typedef struct {
     Context* context;       // Pointer to the context
     SOCKET clientSocket;    // Client socket
+    int clientId;           // Client id
     int threadIndex;        // Index of the thread in the thread pool
 } ClientDataReceiverThreadData;
 
 typedef struct {
     Context* context;       // Pointer to the context
     SOCKET workerSocket;    // Worker socket
+    int workerId;           // Worker id
     int threadIndex;        // Index of the thread in the thread pool
 } WorkerDataReceiverThreadData;
 
 typedef struct {
     Context* context;       // Pointer to the context
     SOCKET workerSocket;    // Worker socket
+    int workerId;           // Worker id
 } WorkerHandlerThreadData;
 
 // User libraries

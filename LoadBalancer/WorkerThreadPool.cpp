@@ -65,7 +65,7 @@ int DestroyWorkerThreadPool(WorkerThreadPool* pool) {
     return 0;
 }
 
-int AssignWorkerDataReceiverThread(WorkerThreadPool* pool, SOCKET workerSocket, Context* context) {
+int AssignWorkerDataReceiverThread(WorkerThreadPool* pool, const SOCKET workerSocket,  Context* context, const int workerId) {
     if (pool == NULL) {
         PrintError("Invalid worker thread pool provided to 'AssignWorkerDataReceiverThread'.");
 
@@ -113,6 +113,7 @@ int AssignWorkerDataReceiverThread(WorkerThreadPool* pool, SOCKET workerSocket, 
 
                 data->context = context;
                 data->workerSocket = workerSocket;
+                data->workerId = workerId;
                 data->threadIndex = i;
 
                 pool->threads[i] = CreateThread(NULL, 0, WorkerDataReceiverThread, data, 0, NULL);
@@ -147,7 +148,7 @@ int AssignWorkerDataReceiverThread(WorkerThreadPool* pool, SOCKET workerSocket, 
     return -1;
 }
 
-int ReturnWorkerDataReceiverThread(WorkerThreadPool* pool, int threadIndex, WorkerDataReceiverThreadData* data) {
+int ReturnWorkerDataReceiverThread(WorkerThreadPool* pool, const int threadIndex, WorkerDataReceiverThreadData* data) {
     if (pool == NULL) {
         PrintError("Invalid worker thread pool provided to 'ReturnWorkerDataReceiverThread'.");
 

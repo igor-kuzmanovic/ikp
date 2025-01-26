@@ -6,6 +6,7 @@ DWORD WINAPI ClientListenerThread(LPVOID lpParam) {
     Context* context = (Context*)lpParam;
 
     int iResult;
+    int clientId = 1;
 
     while (true) {
         // Wait for the signal to stop the thread
@@ -28,7 +29,7 @@ DWORD WINAPI ClientListenerThread(LPVOID lpParam) {
 
             if (context->clientThreadPool->count < MAX_CLIENTS) {
                 PrintDebug("Assigning the client to a client data receiver thread.");
-                iResult = AssignClientDataReceiverThread(context->clientThreadPool, clientSocket, context);
+                iResult = AssignClientDataReceiverThread(context->clientThreadPool, clientSocket, context, clientId++);
                 if (iResult == -1) {
                     PrintWarning("Cannot assign client to a client data receiver thread. Rejecting client.");
 

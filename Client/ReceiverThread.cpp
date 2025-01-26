@@ -7,7 +7,7 @@ DWORD WINAPI ReceiverThread(LPVOID lpParam) {
     Context* context = (Context*)lpParam;
 
     // Buffer used for storing incoming data
-    char receiveBuffer[BUFFER_SIZE]{};
+    MessageBuffer receiveMessageBuffer{};
 
     // A variable to store the result of recv
     int recvResult = 0;
@@ -24,21 +24,24 @@ DWORD WINAPI ReceiverThread(LPVOID lpParam) {
         }
 
         // Receive data from server
-        recvResult = recv(context->connectSocket, receiveBuffer, BUFFER_SIZE, 0);
+        recvResult = recv(context->connectSocket, receiveMessageBuffer.buffer, BUFFER_SIZE, 0);
         if (recvResult > 0) {
-            PrintInfo("Message received: '%s' with length %d.", receiveBuffer, recvResult);
+            PrintInfo("Message received with length %d.", recvResult);
 
-            // Check if server is shutting down
-            if (strstr(receiveBuffer, SERVER_SHUTDOWN_MESSAGE) != NULL) {
+            switch (receiveMessageBuffer.message.type) {
+            case MSG_KEY_VALUE_PAIR_STORED:
+                // TODO Remove worker id print later, client doesn't need to know about it
+                PrintInfo("Key-Value Pair with key '%s' stored on worker id %d.", receiveMessageBuffer.message.payload.keyValuePairStored.key, receiveMessageBuffer.message.payload.keyValuePairStored.workerId);
+
+                break;
+            case MSG_SERVER_SHUTDOWN:
                 PrintInfo("Server shutdown notification received.");
 
                 PrintDebug("Setting the finish signal.");
                 SetFinishSignal(context);
 
                 break;
-            }
-            // Check if server is busy
-            else if (strstr(receiveBuffer, SERVER_BUSY_MESSAGE) != NULL) {
+            case MSG_SERVER_BUSY:
                 PrintInfo("Server is busy, pausing the sender.");
 
                 PrintDebug("Enabling the pause sender flag.");
@@ -56,9 +59,14 @@ DWORD WINAPI ReceiverThread(LPVOID lpParam) {
                 PrintInfo("Assuming the server is ready to receive new requests, resuming the sender.");
 
                 continue;
+            default:
+                PrintError("Unsupported message type: %d.", receiveMessageBuffer.message.type);
+                
+                continue;
             }
+
             // Check if server is ready
-            else if (serverFullSleepTimeMultiplier != 1) {
+            if (serverFullSleepTimeMultiplier != 1) {
                 PrintDebug("Resetting the sleep time multiplier.");
                 serverFullSleepTimeMultiplier = 1;
 

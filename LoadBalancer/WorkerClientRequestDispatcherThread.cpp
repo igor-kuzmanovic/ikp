@@ -18,6 +18,10 @@ DWORD WINAPI WorkerClientRequestDispatcherThread(LPVOID lpParam) {
         return FALSE;
     }
 
+    // A variable to store the message that will be dispatched to the worker
+    MessageBuffer messageBuffer{};
+    messageBuffer.message.type = MessageType::MSG_KEY_VALUE_PAIR_STORE_REQUEST;
+
     // A variable to store the worker
     WorkerNode* worker = (WorkerNode*)malloc(sizeof(WorkerNode));
     if (worker == NULL) {
@@ -80,11 +84,19 @@ DWORD WINAPI WorkerClientRequestDispatcherThread(LPVOID lpParam) {
 
         // Send the client request to the worker
         if (hasRequest && hasWorker) {
-            PrintInfo("Dispatching client request from client socket %d to worker %d", request->clientSocket, worker->socket);
+            PrintInfo("Dispatching client request from client socket %d to worker socket %d", request->clientSocket, worker->workerSocket);
 
-            sendResult = send(worker->socket, request->data.buffer, BUFFER_SIZE, 0);
+            messageBuffer.message.payload.keyValuePairStoreRequest.clientId = request->clientId;
+            strcpy_s(messageBuffer.message.payload.keyValuePairStoreRequest.key, request->data.message.payload.keyValuePair.key);
+            strcpy_s(messageBuffer.message.payload.keyValuePairStoreRequest.value, request->data.message.payload.keyValuePair.value);
+
+            sendResult = send(worker->workerSocket, messageBuffer.buffer, BUFFER_SIZE, 0);
             if (sendResult > 0) {
-                PrintInfo("Message sent to worker %d: '%s:%s' with length %d.", worker->socket, request->data.message.payload.keyValuePair.key, request->data.message.payload.keyValuePair.value, sendResult);
+                PrintInfo("Message sent to worker %d: '%s:%s' with length %d.", worker->workerSocket, messageBuffer.message.payload.keyValuePairStoreRequest.key, messageBuffer.message.payload.keyValuePairStoreRequest.value, sendResult);
+
+                messageBuffer.message.payload.keyValuePairStoreRequest.clientId = 0;
+                memset(messageBuffer.message.payload.keyValuePairStoreRequest.key, 0, MAX_KEY_LENGTH);
+                memset(messageBuffer.message.payload.keyValuePairStoreRequest.value, 0, MAX_VALUE_LENGTH);
 
                 memset(request, 0, sizeof(ClientRequest));
                 hasRequest = false;

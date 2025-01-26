@@ -36,17 +36,30 @@
 typedef enum {
     MSG_UNKNOWN = 0,
     MSG_KEY_VALUE_PAIR = 1,
-    MSG_SERVER_SHUTDOWN = 2,
-    MSG_SERVER_BUSY = 3,
-    MSG_WORKER_HEALTH_CHECK = 4,
-    MSG_WORKER_OK = 5,
-    MSG_CUSTOM = 6 // For additional messages
+    MSG_KEY_VALUE_PAIR_STORE_REQUEST = 2,
+    MSG_KEY_VALUE_PAIR_STORED = 3,
+    MSG_SERVER_SHUTDOWN = 4,
+    MSG_SERVER_BUSY = 5,
+    MSG_WORKER_HEALTH_CHECK = 6,
+    MSG_WORKER_OK = 7,
 } MessageType;
 
 typedef struct {
     char key[MAX_KEY_LENGTH];
     char value[MAX_VALUE_LENGTH];
-} KeyValuePair;
+} KeyValuePairMessage;
+
+typedef struct {
+    char key[MAX_KEY_LENGTH];
+    char value[MAX_VALUE_LENGTH];
+    int clientId;
+} KeyValuePairStoreRequestMessage;
+
+typedef struct {
+    char key[MAX_KEY_LENGTH];
+    int clientId;
+    int workerId;
+} KeyValuePairStoredMessage;
 
 typedef struct {
     bool isTrue;
@@ -61,7 +74,9 @@ typedef struct {
 } WorkerHealthResponseMessage;
 
 typedef union {
-    KeyValuePair keyValuePair;
+    KeyValuePairMessage keyValuePair;
+    KeyValuePairStoreRequestMessage keyValuePairStoreRequest;
+    KeyValuePairStoredMessage keyValuePairStored;
     ServerShutdownMessage serverShutdown;
     WorkerHealthCheckMessage healthCheck;
     WorkerHealthResponseMessage healthResponse;

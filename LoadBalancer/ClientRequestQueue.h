@@ -12,6 +12,6 @@ int InitializeClientRequestQueue(ClientRequestQueue* queue);
 
 int DestroyClientRequestQueue(ClientRequestQueue* queue);
 
-int PutClientRequestQueue(ClientRequestQueue* queue, SOCKET clientSocket, const char* data, int length);
+int PutClientRequestQueue(ClientRequestQueue* queue, SOCKET clientSocket, const char* data, int length, const int clientId);
 
 int TakeClientRequestQueue(ClientRequestQueue* queue, ClientRequest* request);

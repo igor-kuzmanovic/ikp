@@ -10,7 +10,7 @@ DWORD WINAPI WorkerHealthCheckThread(LPVOID lpParam) {
     int sendBufferLength;
     int sendResult;
     WorkerNode* worker = NULL;
-    Message message;
+    Message message{};
 
     while (true) {
         Sleep(1000); // TODO Remove, for testing purposes
@@ -53,19 +53,19 @@ DWORD WINAPI WorkerHealthCheckThread(LPVOID lpParam) {
                 break;
             }
 
-            sendResult = send(worker->socket, sendBuffer, sendBufferLength, 0);
+            sendResult = send(worker->workerSocket, sendBuffer, sendBufferLength, 0);
             if (sendResult > 0) {
-                PrintInfo("[WorkerHealthCheckThread] Health check sent to worker: id %d, socket %d.", worker->id, worker->socket);
+                PrintInfo("[WorkerHealthCheckThread] Health check sent to worker: id %d, socket %d.", worker->workerId, worker->workerSocket);
             } else if (sendResult == 0) {
                 PrintInfo("[WorkerHealthCheckThread] Worker disconnected.");
 
-                iResult = RemoveWorker(context->workerList, worker->id);
+                iResult = RemoveWorker(context->workerList, worker->workerId);
                 if (iResult < 0) {
                     PrintError("[WorkerHealthCheckThread] Failed to remove the worker from the list.");
                 }
 
-                if (worker->socket != INVALID_SOCKET) {
-                    iResult = closesocket(worker->socket);
+                if (worker->workerSocket != INVALID_SOCKET) {
+                    iResult = closesocket(worker->workerSocket);
                     if (iResult == SOCKET_ERROR) {
                         PrintInfo("[WorkerHealthCheckThread] 'closesocket' failed with error: %d.", WSAGetLastError());
                     }
@@ -79,13 +79,13 @@ DWORD WINAPI WorkerHealthCheckThread(LPVOID lpParam) {
                     // Ignore WSAEWOULDBLOCK, it is not an actual error
                     PrintInfo("[WorkerHealthCheckThread] 'send' failed with error: %d.", WSAGetLastError());
 
-                    iResult = RemoveWorker(context->workerList, worker->id);
+                    iResult = RemoveWorker(context->workerList, worker->workerId);
                     if (iResult < 0) {
                         PrintError("[WorkerHealthCheckThread] Failed to remove the worker from the list.");
                     }
 
-                    if (worker->socket != INVALID_SOCKET) {
-                        iResult = closesocket(worker->socket);
+                    if (worker->workerSocket != INVALID_SOCKET) {
+                        iResult = closesocket(worker->workerSocket);
                         if (iResult == SOCKET_ERROR) {
                             PrintInfo("[WorkerHealthCheckThread] 'closesocket' failed with error: %d.", WSAGetLastError());
                         }

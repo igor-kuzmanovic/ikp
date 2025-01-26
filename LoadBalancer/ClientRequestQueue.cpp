@@ -60,7 +60,7 @@ int DestroyClientRequestQueue(ClientRequestQueue* queue) {
     return 0;
 }
 
-int PutClientRequestQueue(ClientRequestQueue* queue, SOCKET clientSocket, const char* data, int length) {
+int PutClientRequestQueue(ClientRequestQueue* queue, SOCKET clientSocket, const char* data, int length, const int clientId) {
     if (queue == NULL) {
         PrintError("Invalid client request queue provided to 'PutClientRequestQueue'.");
 
@@ -106,6 +106,7 @@ int PutClientRequestQueue(ClientRequestQueue* queue, SOCKET clientSocket, const 
 
     PrintDebug("Putting a request in the client request queue.");
     queue->queue[queue->tail].clientSocket = clientSocket;
+    queue->queue[queue->tail].clientId = clientId;
     memcpy(queue->queue[queue->tail].data.buffer, data, length);
 
     queue->tail = (queue->tail + 1) % CLIENT_REQUEST_QUEUE_CAPACITY;
@@ -161,6 +162,7 @@ int TakeClientRequestQueue(ClientRequestQueue* queue, ClientRequest* request) {
 
     PrintDebug("Taking a request from the client request queue.");
     request->clientSocket = queue->queue[queue->head].clientSocket;
+    request->clientId = queue->queue[queue->head].clientId;
     memcpy(request->data.buffer, queue->queue[queue->head].data.buffer, BUFFER_SIZE);
 
     queue->head = (queue->head + 1) % CLIENT_REQUEST_QUEUE_CAPACITY;

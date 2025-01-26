@@ -6,6 +6,7 @@ DWORD WINAPI WorkerListenerThread(LPVOID lpParam) {
     Context* context = (Context*)lpParam;
 
     int iResult;
+    int workerId = 1;
 
     while (true) {
         // Wait for the signal to stop the thread
@@ -28,7 +29,7 @@ DWORD WINAPI WorkerListenerThread(LPVOID lpParam) {
 
             if (context->workerThreadPool->count < MAX_WORKERS) {
                 PrintDebug("Assigning the worker to a worker data receiver thread.");
-                iResult = AssignWorkerDataReceiverThread(context->workerThreadPool, workerSocket, context);
+                iResult = AssignWorkerDataReceiverThread(context->workerThreadPool, workerSocket, context, workerId++);
                 if (iResult == -1) {
                     PrintWarning("Cannot assign worker to a worker data receiver thread. Rejecting worker.");
 
@@ -50,7 +51,7 @@ DWORD WINAPI WorkerListenerThread(LPVOID lpParam) {
 
             if (context->workerList->count < MAX_WORKERS) {
                 PrintDebug("Adding the worker to the worker list.");
-                iResult = AddWorker(context->workerList, workerSocket);
+                iResult = AddWorker(context->workerList, workerSocket, workerId);
                 if (iResult == -1) {
                     PrintWarning("Cannot add worker to the worker list. Rejecting worker.");
                     
