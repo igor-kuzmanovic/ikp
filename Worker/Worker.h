@@ -5,7 +5,6 @@
 #include "SharedLibs.h"
 #include "InputHandlerThread.h"
 #include "ReceiverThread.h"
-#include "SenderThread.h"
 
 // API
 

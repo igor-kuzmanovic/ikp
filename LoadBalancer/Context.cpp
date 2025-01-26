@@ -50,6 +50,18 @@ int ContextInitialize(Context* context) {
         return -1;
     }
 
+    context->workerThreadPool = (WorkerThreadPool*)malloc(sizeof(WorkerThreadPool));
+    if (context->workerThreadPool == NULL) {
+        PrintCritical("Failed to allocate memory for WorkerThreadPool.");
+
+        return -1;
+    }
+    if (InitializeWorkerThreadPool(context->workerThreadPool) != 0) {
+        PrintCritical("Failed to initialize WorkerThreadPool.");
+
+        return -1;
+    }
+
     context->clientRequestQueue = (ClientRequestQueue*)malloc(sizeof(ClientRequestQueue));
     if (context->clientRequestQueue == NULL) {
         PrintCritical("Failed to allocate memory for ClientRequestQueue.");
@@ -58,6 +70,18 @@ int ContextInitialize(Context* context) {
     }
     if (InitializeClientRequestQueue(context->clientRequestQueue) != 0) {
         PrintCritical("Failed to initialize ClientRequestQueue.");
+
+        return -1;
+    }
+
+    context->workerResponseQueue = (WorkerResponseQueue*)malloc(sizeof(WorkerResponseQueue));
+    if (context->workerResponseQueue == NULL) {
+        PrintCritical("Failed to allocate memory for WorkerResponseQueue.");
+
+        return -1;
+    }
+    if (InitializeWorkerResponseQueue(context->workerResponseQueue) != 0) {
+        PrintCritical("Failed to initialize WorkerResponseQueue.");
 
         return -1;
     }
@@ -73,6 +97,22 @@ int ContextDestroy(Context* context) {
     }
 
     EnterCriticalSection(&context->lock);
+
+    if (context->workerResponseQueue != NULL) {
+        if (DestroyWorkerResponseQueue(context->workerResponseQueue) != 0) {
+            PrintWarning("Failed to destroy WorkerResponseQueue.");
+        }
+        free(context->workerResponseQueue);
+        context->workerResponseQueue = NULL;
+    }
+
+    if (context->workerThreadPool != NULL) {
+        if (DestroyWorkerThreadPool(context->workerThreadPool) != 0) {
+            PrintWarning("Failed to destroy WorkerThreadPool.");
+        }
+        free(context->workerThreadPool);
+        context->workerThreadPool = NULL;
+    }
 
     if (context->workerList != NULL) {
         if (DestroyWorkerList(context->workerList) != 0) {

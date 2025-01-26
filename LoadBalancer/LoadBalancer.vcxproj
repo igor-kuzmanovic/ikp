@@ -133,22 +133,27 @@
   <ItemGroup>
     <ClCompile Include="ClientRequestQueue.cpp" />
     <ClCompile Include="ClientDataReceiverThread.cpp" />
+    <ClCompile Include="ClientWorkerResponseDispatcherThread.cpp" />
     <ClCompile Include="WorkerHealthCheckThread.cpp" />
-    <ClCompile Include="_ClientHandlerThread.cpp" />
+    <ClCompile Include="WorkerDataReceiverThread.cpp" />
+    <ClCompile Include="WorkerResponseQueue.cpp" />
+    <ClCompile Include="WorkerThreadPool.cpp" />
     <ClCompile Include="ClientListenerThread.cpp" />
     <ClCompile Include="Context.cpp" />
     <ClCompile Include="InputHandlerThread.cpp" />
     <ClCompile Include="LoadBalancer.cpp" />
     <ClCompile Include="ClientThreadPool.cpp" />
     <ClCompile Include="WorkerClientRequestDispatcherThread.cpp" />
-    <ClCompile Include="_WorkerHandlerThread.cpp" />
     <ClCompile Include="WorkerList.cpp" />
     <ClCompile Include="WorkerListenerThread.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ClientDataReceiverThread.h" />
+    <ClInclude Include="ClientWorkerResponseDispatcherThread.h" />
     <ClInclude Include="WorkerHealthCheckThread.h" />
-    <ClInclude Include="_ClientHandlerThread.h" />
+    <ClInclude Include="WorkerDataReceiverThread.h" />
+    <ClInclude Include="WorkerResponseQueue.h" />
+    <ClInclude Include="WorkerThreadPool.h" />
     <ClInclude Include="ClientListenerThread.h" />
     <ClInclude Include="ClientRequestQueue.h" />
     <ClInclude Include="ClientThreadPool.h" />
@@ -158,7 +163,6 @@
     <ClInclude Include="LoadBalancer.h" />
     <ClInclude Include="SharedLibs.h" />
     <ClInclude Include="WorkerClientRequestDispatcherThread.h" />
-    <ClInclude Include="_WorkerHandlerThread.h" />
     <ClInclude Include="WorkerList.h" />
     <ClInclude Include="WorkerListenerThread.h" />
   </ItemGroup>

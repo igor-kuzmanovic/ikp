@@ -3,20 +3,16 @@
 DWORD WINAPI SenderThread(LPVOID lpParam) {
     PrintDebug("Sender started.");
 
-    // Context
     Context* context = (Context*)lpParam;
 
-    // Buffer used for storing outgoing data
-    char sendBuffer[BUFFER_SIZE]{};
-
-    // Send result
-    int sendResult;
+    int iResult = 0;
+    MessageBuffer sendMessageBuffer{};
+    int messageLength = 0;
+    int messageCounter = 0;
+    int sendResult = 0;
 
     // A variable to exponentially increase the sleep time when server is busy
     int serverFullSleepTimeMultiplier = 1;
-
-    // Message counter
-    int messageCounter = 9; // TODO Reset to 0 after testing
 
     // Initialize a random seed for generating random values
     srand((unsigned int)time(NULL));
@@ -27,7 +23,6 @@ DWORD WINAPI SenderThread(LPVOID lpParam) {
         PrintInfo("Sending messages to the server until the stop signal is received.");
     }
 
-#pragma warning(suppress : C6235)
     while (MESSAGE_COUNT == INFINITE || messageCounter < MESSAGE_COUNT) {
         // Wait for the signal to stop the thread
         if (WaitForSingleObject(context->finishSignal, 0) == WAIT_OBJECT_0) {
@@ -52,11 +47,17 @@ DWORD WINAPI SenderThread(LPVOID lpParam) {
         }
 
         // Send an prepared message with null terminator included
-        GenerateClientMessage(context->connectSocket, sendBuffer, ++messageCounter);
-        PrintDebug("Sending a message to the server: '%s'.", sendBuffer);
-        sendResult = send(context->connectSocket, sendBuffer, (int)strlen(sendBuffer) + 1, 0);
+        messageLength = GenerateClientMessage(&sendMessageBuffer.message, context->connectSocket, ++messageCounter);
+        if (messageLength <= 0) {
+            PrintError("Failed to generate a message.");
+
+            continue;
+        }
+
+        PrintDebug("Sending a message to the server: '%s:%s'.", sendMessageBuffer.message.payload.keyValuePair.key, sendMessageBuffer.message.payload.keyValuePair.value);
+        sendResult = send(context->connectSocket, sendMessageBuffer.buffer, BUFFER_SIZE, 0);
         if (sendResult > 0) {
-            PrintInfo("Message sent: '%s' with length %d.", sendBuffer, sendResult);
+            PrintInfo("Message sent: '%s:%s' with length %d.", sendMessageBuffer.message.payload.keyValuePair.key, sendMessageBuffer.message.payload.keyValuePair.value, sendResult);
         } else if (sendResult == 0) {
             PrintInfo("Server disconnected.");
 

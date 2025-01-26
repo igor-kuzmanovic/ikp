@@ -6,14 +6,16 @@ DWORD WINAPI WorkerHealthCheckThread(LPVOID lpParam) {
     Context* context = (Context*)lpParam;
 
     int iResult;
-
-    // A variable to store the result of send
+    char sendBuffer[BUFFER_SIZE];
+    int sendBufferLength;
     int sendResult;
-
-    // A pointer to the worker
     WorkerNode* worker = NULL;
+    Message message;
 
     while (true) {
+        Sleep(1000); // TODO Remove, for testing purposes
+        continue; // TODO Remove, for testing purposes
+
         // Wait for the signal to stop the thread
         if (WaitForSingleObject(context->finishSignal, 0) == WAIT_OBJECT_0) {
             PrintDebug("[WorkerHealthCheckThread] Stop signal received, stopping thread.");
@@ -43,7 +45,15 @@ DWORD WINAPI WorkerHealthCheckThread(LPVOID lpParam) {
 
         while (worker != NULL) {
             // Check if the worker is still alive
-            sendResult = send(worker->socket, WORKER_HEALTH_CHECK_MESSAGE, (int)strlen(WORKER_HEALTH_CHECK_MESSAGE) + 1, 0);
+            message.type = MSG_WORKER_HEALTH_CHECK;
+            sendBufferLength = SerializeMessage(&message, sendBuffer);
+            if (sendBufferLength <= 0) {
+                PrintError("[WorkerHealthCheckThread] Failed to serialize the message.");
+
+                break;
+            }
+
+            sendResult = send(worker->socket, sendBuffer, sendBufferLength, 0);
             if (sendResult > 0) {
                 PrintInfo("[WorkerHealthCheckThread] Health check sent to worker: id %d, socket %d.", worker->id, worker->socket);
             } else if (sendResult == 0) {

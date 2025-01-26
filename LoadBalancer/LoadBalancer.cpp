@@ -11,7 +11,8 @@ int main(void) {
     HANDLE clientListenerThread = NULL;
     HANDLE workerClientRequestDispatcherThread = NULL;
     HANDLE workerHealthCheckThread = NULL;
-    HANDLE threads[THREAD_COUNT] = { NULL, NULL, NULL, NULL, NULL };
+    HANDLE clientWorkerResponseDispatcherThread = NULL;
+    HANDLE threads[THREAD_COUNT] = { NULL, NULL, NULL, NULL, NULL, NULL };
 
     // Initialize Winsock
     PrintDebug("Initializing Winsock.");
@@ -241,6 +242,19 @@ int main(void) {
         return EXIT_FAILURE;
     }
     threads[4] = workerHealthCheckThread;
+
+    // Starts dispatching worker responses to clients in a new thread
+    PrintDebug("Starting client worker response dispatcher thread.");
+    clientWorkerResponseDispatcherThread = CreateThread(NULL, 0, &ClientWorkerResponseDispatcherThread, &context, NULL, NULL);
+    if (clientWorkerResponseDispatcherThread == NULL) {
+        PrintCritical("'CreateThread' for ClientWorkerResponseDispatcherThread failed with error: %d.", GetLastError());
+
+        // Close everything and cleanup
+        CleanupFull(&context, threads, THREAD_COUNT);
+
+        return EXIT_FAILURE;
+    }
+    threads[5] = clientWorkerResponseDispatcherThread;
 
     PrintInfo("Server initialized, waiting for clients and workers.");
 

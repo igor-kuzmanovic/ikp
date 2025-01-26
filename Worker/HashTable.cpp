@@ -33,7 +33,7 @@ static void PrintHashTable(const HashTable* table) {
         EnterCriticalSection(&table->locks[i]);
 
         DataNode* node = table->buckets[i];
-        int bucketSize = 0;
+        size_t bucketSize = 0;
         int bucketCount = 0;
 
         // Count the key-value pairs in the current bucket
@@ -145,6 +145,49 @@ int DestroyHashTable(HashTable* table) {
     free(table->locks);
     free(table);
     table = NULL;
+
+    return 0;
+}
+
+int HasHashTable(const HashTable* table, const char* key) {
+    if (table == NULL) {
+        PrintError("Invalid hash table provided to 'GetHashTable'.");
+
+        return -1;
+    }
+
+    if (key == NULL) {
+        PrintError("Invalid key provided to 'GetHashTable'.");
+
+        return -1;
+    }
+
+    if (*key == '\0') {
+        PrintError("Empty key provided to 'GetHashTable'.");
+
+        return -1;
+    }
+
+    int iResult;
+
+    int bucketIndex = HashFunction(key);
+
+    EnterCriticalSection(&table->locks[bucketIndex]);
+
+    DataNode* node = table->buckets[bucketIndex];
+    while (node) {
+        if (strcmp(node->key, key) == 0) {
+            LeaveCriticalSection(&table->locks[bucketIndex]);
+
+            PrintDebug("Key '%s' found in the hash table.", key);
+
+            return 1;
+        }
+
+        node = node->next;
+    }
+
+    LeaveCriticalSection(&table->locks[bucketIndex]);
 
     return 0;
 }

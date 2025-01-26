@@ -39,7 +39,7 @@ typedef struct {
 
 // Functions
 
-int GenerateClientMessage(SOCKET clientSocket, char* buffer, int id);
+int GenerateClientMessage(Message* message, const SOCKET clientSocket, const int id);
 
 // User libraries
 

@@ -2,7 +2,7 @@
 
 // User-defined constants
 
-#define THREAD_COUNT                    3       // Number of non-dynamic threads
+#define THREAD_COUNT                    2       // Number of non-dynamic threads
 
 #define INPUT_WAIT_TIME                 10      // ms
 

@@ -135,7 +135,6 @@
     <ClCompile Include="HashTable.cpp" />
     <ClCompile Include="InputHandlerThread.cpp" />
     <ClCompile Include="ReceiverThread.cpp" />
-    <ClCompile Include="SenderThread.cpp" />
     <ClCompile Include="Worker.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -144,7 +143,6 @@
     <ClInclude Include="HashTable.h" />
     <ClInclude Include="InputHandlerThread.h" />
     <ClInclude Include="ReceiverThread.h" />
-    <ClInclude Include="SenderThread.h" />
     <ClInclude Include="SharedLibs.h" />
     <ClInclude Include="Worker.h" />
   </ItemGroup>

@@ -22,7 +22,7 @@
 // Set the default logging level, to override it set define LOG_LEVEL before importing the header
 // This doesn't quite work at the moment but might be useful if we figure out how to override it per project
 #ifndef LOG_LEVEL
-#define LOG_LEVEL LOG_LEVEL_INFO
+#define LOG_LEVEL LOG_LEVEL_DEBUG
 #endif
 
 // API

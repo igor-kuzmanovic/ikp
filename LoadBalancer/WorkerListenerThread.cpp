@@ -26,6 +26,28 @@ DWORD WINAPI WorkerListenerThread(LPVOID lpParam) {
         } else {
             PrintInfo("New worker connected.");
 
+            if (context->workerThreadPool->count < MAX_WORKERS) {
+                PrintDebug("Assigning the worker to a worker data receiver thread.");
+                iResult = AssignWorkerDataReceiverThread(context->workerThreadPool, workerSocket, context);
+                if (iResult == -1) {
+                    PrintWarning("Cannot assign worker to a worker data receiver thread. Rejecting worker.");
+
+                    PrintDebug("Closing the worker socket.");
+                    iResult = closesocket(workerSocket);
+                    if (iResult == SOCKET_ERROR) {
+                        PrintError("'closesocket' failed with error: %d.", WSAGetLastError());
+                    }
+                }
+            } else {
+                PrintWarning("Maximum worker limit reached. Rejecting worker.");
+
+                PrintDebug("Closing the worker socket.");
+                iResult = closesocket(workerSocket);
+                if (iResult == SOCKET_ERROR) {
+                    PrintError("'closesocket' failed with error: %d.", WSAGetLastError());
+                }
+            }
+
             if (context->workerList->count < MAX_WORKERS) {
                 PrintDebug("Adding the worker to the worker list.");
                 iResult = AddWorker(context->workerList, workerSocket);

@@ -106,8 +106,7 @@ int PutClientRequestQueue(ClientRequestQueue* queue, SOCKET clientSocket, const 
 
     PrintDebug("Putting a request in the client request queue.");
     queue->queue[queue->tail].clientSocket = clientSocket;
-    strncpy_s(queue->queue[queue->tail].data, BUFFER_SIZE, data, length);
-    queue->queue[queue->tail].data[length] = '\0';
+    memcpy(queue->queue[queue->tail].data.buffer, data, length);
 
     queue->tail = (queue->tail + 1) % CLIENT_REQUEST_QUEUE_CAPACITY;
     queue->count++;
@@ -162,7 +161,7 @@ int TakeClientRequestQueue(ClientRequestQueue* queue, ClientRequest* request) {
 
     PrintDebug("Taking a request from the client request queue.");
     request->clientSocket = queue->queue[queue->head].clientSocket;
-    strncpy_s(request->data, BUFFER_SIZE, queue->queue[queue->head].data, strlen(queue->queue[queue->head].data));
+    memcpy(request->data.buffer, queue->queue[queue->head].data.buffer, BUFFER_SIZE);
 
     queue->head = (queue->head + 1) % CLIENT_REQUEST_QUEUE_CAPACITY;
     queue->count--;

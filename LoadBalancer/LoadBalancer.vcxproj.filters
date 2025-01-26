@@ -18,16 +18,10 @@
     <ClCompile Include="LoadBalancer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="_ClientHandlerThread.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="InputHandlerThread.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Context.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="_WorkerHandlerThread.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ClientThreadPool.cpp">
@@ -54,12 +48,21 @@
     <ClCompile Include="WorkerHealthCheckThread.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="WorkerDataReceiverThread.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="WorkerResponseQueue.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="WorkerThreadPool.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ClientWorkerResponseDispatcherThread.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="LoadBalancer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="_ClientHandlerThread.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="InputHandlerThread.h">
@@ -72,9 +75,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="SharedLibs.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="_WorkerHandlerThread.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ClientListenerThread.h">
@@ -99,6 +99,18 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="WorkerHealthCheckThread.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="WorkerDataReceiverThread.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="WorkerResponseQueue.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="WorkerThreadPool.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ClientWorkerResponseDispatcherThread.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

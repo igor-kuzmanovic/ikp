@@ -7,9 +7,8 @@ int main() {
 
     // Threads to be created
     HANDLE inputHandlerThread = NULL;
-    HANDLE senderThread = NULL;
     HANDLE receiverThread = NULL;
-    HANDLE threads[THREAD_COUNT] = { NULL, NULL, NULL };
+    HANDLE threads[THREAD_COUNT] = { NULL, NULL };
 
     // Initialize Winsock
     iResult = InitializeWindowsSockets();
@@ -135,19 +134,6 @@ int main() {
         return EXIT_FAILURE;
     }
 
-    // Starts periodically sending requests to the server in a new thread
-    PrintDebug("Starting sender thread.");
-    senderThread = CreateThread(NULL, 0, &SenderThread, &context, NULL, NULL);
-    if (senderThread == NULL) {
-        PrintCritical("'CreateThread' for SenderThread failed with error: %d.", GetLastError());
-
-        // Close everything and cleanup
-        CleanupFull(&context, threads, THREAD_COUNT);
-
-        return EXIT_FAILURE;
-    }
-    threads[1] = senderThread;
-
     // Starts receiving responses from the server in a new thread
     PrintDebug("Starting receiver thread.");
     receiverThread = CreateThread(NULL, 0, &ReceiverThread, &context, NULL, NULL);
@@ -159,7 +145,7 @@ int main() {
 
         return EXIT_FAILURE;
     }
-    threads[2] = receiverThread;
+    threads[1] = receiverThread;
 
     // Wait for threads to finish
     PrintDebug("Waiting for the threads to finish.");

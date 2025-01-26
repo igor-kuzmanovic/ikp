@@ -82,9 +82,9 @@ DWORD WINAPI WorkerClientRequestDispatcherThread(LPVOID lpParam) {
         if (hasRequest && hasWorker) {
             PrintInfo("Dispatching client request from client socket %d to worker %d", request->clientSocket, worker->socket);
 
-            sendResult = send(worker->socket, request->data, (int)strlen(request->data) + 1, 0);
+            sendResult = send(worker->socket, request->data.buffer, BUFFER_SIZE, 0);
             if (sendResult > 0) {
-                PrintInfo("Message sent to worker %d: '%s' with length %d.", worker->socket, request->data, sendResult);
+                PrintInfo("Message sent to worker %d: '%s:%s' with length %d.", worker->socket, request->data.message.payload.keyValuePair.key, request->data.message.payload.keyValuePair.value, sendResult);
 
                 memset(request, 0, sizeof(ClientRequest));
                 hasRequest = false;

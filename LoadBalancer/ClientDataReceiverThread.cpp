@@ -12,7 +12,7 @@ DWORD WINAPI ClientDataReceiverThread(LPVOID lpParam) {
     int iResult;
 
     // Buffer used for storing incoming data
-    char receiveBuffer[BUFFER_SIZE]{};
+    MessageBuffer receiveMessageBuffer{};
 
     // A variable to store the result of recv
     int recvResult = 0;
@@ -29,11 +29,22 @@ DWORD WINAPI ClientDataReceiverThread(LPVOID lpParam) {
         }
 
         // Receive data from the client
-        recvResult = recv(clientSocket, receiveBuffer, BUFFER_SIZE, 0);
+        recvResult = recv(clientSocket, receiveMessageBuffer.buffer, BUFFER_SIZE, 0);
         if (recvResult > 0) {
-            PrintInfo("Message received: '%s' with length %d.", receiveBuffer, recvResult);
+            PrintInfo("Message received with length %d.", receiveMessageBuffer, recvResult);
 
-            iResult = PutClientRequestQueue(context->clientRequestQueue, clientSocket, receiveBuffer, recvResult);
+            switch (receiveMessageBuffer.message.type) {
+            case MSG_KEY_VALUE_PAIR:
+                PrintInfo("Key-Value Pair: '%s:%s'.", receiveMessageBuffer.message.payload.keyValuePair.key, receiveMessageBuffer.message.payload.keyValuePair.value);
+
+                break;
+            default:
+                PrintError("Unsupported message type: %d.", receiveMessageBuffer.message.type);
+
+                continue;
+            }
+
+            iResult = PutClientRequestQueue(context->clientRequestQueue, clientSocket, receiveMessageBuffer.buffer, recvResult);
             if (iResult == 0) {
                 PrintError("Client request queue is full, notifying the client that the server is busy.");
 

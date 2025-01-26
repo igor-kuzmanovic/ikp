@@ -5,10 +5,14 @@ DWORD WINAPI ReceiverThread(LPVOID lpParam) {
 
     Context* context = (Context*)lpParam;
 
-    char receiveBuffer[BUFFER_SIZE]{};
+    int iResult = 0;
+    MessageBuffer receiveMessageBuffer{};
+    MessageBuffer responseMessageBuffer{};
+    responseMessageBuffer.message.type = MSG_WORKER_OK;
+    responseMessageBuffer.message.payload.healthResponse.isHealthy = TRUE;
+    int responseBufferLength = 0;
     int recvResult = 0;
-
-    KeyValuePair kvp = {};
+    int sendResult = 0;
 
     while (true) {
         // Wait for the signal to stop the thread
@@ -19,33 +23,81 @@ DWORD WINAPI ReceiverThread(LPVOID lpParam) {
         }
 
         // Receive data from server
-        recvResult = recv(context->connectSocket, receiveBuffer, BUFFER_SIZE, 0);
+        recvResult = recv(context->connectSocket, receiveMessageBuffer.buffer, BUFFER_SIZE, 0);
         if (recvResult > 0) {
-            // Check if server is shutting down
-            if (strstr(receiveBuffer, SERVER_SHUTDOWN_MESSAGE) != NULL) {
-                PrintInfo("Server shutdown notification received.");
+            PrintInfo("Message received with length %d.", recvResult);
 
-                PrintDebug("Setting the finish signal.");
+            switch (receiveMessageBuffer.message.type) {
+            case MSG_KEY_VALUE_PAIR:
+                PrintInfo("Key-Value Pair: '%s:%s'.", receiveMessageBuffer.message.payload.keyValuePair.key, receiveMessageBuffer.message.payload.keyValuePair.value);
+
+                break;
+
+            case MSG_SERVER_SHUTDOWN:
+                PrintInfo("Server Shutdown Message.");
+
+                break;
+
+            case MSG_WORKER_HEALTH_CHECK:
+                PrintInfo("Worker Health Check: Worker ID = %s.", receiveMessageBuffer.message.payload.healthCheck.workerId);
+
+                break;
+
+            case MSG_WORKER_OK:
+                PrintInfo("Worker Health Response: Is Healthy = %d.", receiveMessageBuffer.message.payload.healthResponse.isHealthy);
+
+                break;
+
+            default:
+                PrintError("Unsupported message type: %d.", receiveMessageBuffer.message.type);
+
+                break;
+            }
+
+            switch (receiveMessageBuffer.message.type) {
+            case MSG_KEY_VALUE_PAIR:
+                if (HasHashTable(context->hashTable, receiveMessageBuffer.message.payload.keyValuePair.key)) {
+                    PrintWarning("Key '%s' already exists in the hash table.", receiveMessageBuffer.message.payload.keyValuePair.key);
+                }
+
+                if (SetHashTable(context->hashTable, receiveMessageBuffer.message.payload.keyValuePair.key, receiveMessageBuffer.message.payload.keyValuePair.value) == 1) {
+                    PrintDebug("Stored key-value pair. Sending notification.");
+
+                    // TODO Remove, for debugging purposes and implement properly later
+                    send(context->connectSocket, WORKER_OK, (int)strlen(WORKER_OK) + 1, 0);
+                } else {
+                    PrintError("Failed to store key-value pair in the hash table.");
+                }
+
+                break;
+
+            case MSG_SERVER_SHUTDOWN:
                 SetFinishSignal(context);
 
                 break;
-            } else if (strstr(receiveBuffer, WORKER_HEALTH_CHECK_MESSAGE) != NULL) {
-                PrintInfo("Health check request received.");
 
-                continue;
-            } else {
-                PrintInfo("Client request received: '%s' with length %d.", receiveBuffer, recvResult);
-
-                if (DeserializeKVPair(receiveBuffer, &kvp) != 0) {
-                    PrintError("Deserialization failed.");
-
-                    continue;
+            case MSG_WORKER_HEALTH_CHECK:
+                // Send a health check response
+                sendResult = send(context->connectSocket, responseMessageBuffer.buffer, BUFFER_SIZE, 0);
+                if (sendResult > 0) {
+                    PrintInfo("Health check response sent.");
+                } else if (sendResult == 0) {
+                    PrintInfo("Server disconnected.");
+                    SetFinishSignal(context);
+                } else {
+                    if (WSAGetLastError() != WSAEWOULDBLOCK) {
+                        // Ignore WSAEWOULDBLOCK, it is not an actual error
+                        PrintError("[ReceiverThread] 'send' failed with error: %d.", WSAGetLastError());
+                    }
                 }
 
-                SetHashTable(context->hashTable, kvp.key, kvp.value);
+                break;
+            default:
+                break;
             }
         } else if (recvResult == 0) {
             PrintInfo("Server closed the connection.");
+            SetFinishSignal(context);
 
             break;
         } else {
