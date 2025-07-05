@@ -131,26 +131,24 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="ClientRequestQueue.cpp" />
-    <ClCompile Include="ClientDataReceiverThread.cpp" />
-    <ClCompile Include="ClientWorkerResponseDispatcherThread.cpp" />
-    <ClCompile Include="WorkerHealthCheckThread.cpp" />
-    <ClCompile Include="WorkerDataReceiverThread.cpp" />
-    <ClCompile Include="WorkerResponseQueue.cpp" />
-    <ClCompile Include="WorkerThreadPool.cpp" />
-    <ClCompile Include="ClientListenerThread.cpp" />
-    <ClCompile Include="Context.cpp" />
-    <ClCompile Include="InputHandlerThread.cpp" />
-    <ClCompile Include="LoadBalancer.cpp" />
-    <ClCompile Include="ClientThreadPool.cpp" />
-    <ClCompile Include="WorkerClientRequestDispatcherThread.cpp" />
-    <ClCompile Include="WorkerList.cpp" />
-    <ClCompile Include="WorkerListenerThread.cpp" />
+    <ClCompile Include="ClientRequestQueue.c" />
+    <ClCompile Include="ClientDataReceiverThread.c" />
+    <ClCompile Include="ClientWorkerResponseDispatcherThread.c" />
+    <ClCompile Include="WorkerDataReceiverThread.c" />
+    <ClCompile Include="WorkerResponseQueue.c" />
+    <ClCompile Include="WorkerThreadPool.c" />
+    <ClCompile Include="ClientListenerThread.c" />
+    <ClCompile Include="Context.c" />
+    <ClCompile Include="InputHandlerThread.c" />
+    <ClCompile Include="LoadBalancer.c" />
+    <ClCompile Include="ClientThreadPool.c" />
+    <ClCompile Include="WorkerClientRequestDispatcherThread.c" />
+    <ClCompile Include="WorkerList.c" />
+    <ClCompile Include="WorkerListenerThread.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ClientDataReceiverThread.h" />
     <ClInclude Include="ClientWorkerResponseDispatcherThread.h" />
-    <ClInclude Include="WorkerHealthCheckThread.h" />
     <ClInclude Include="WorkerDataReceiverThread.h" />
     <ClInclude Include="WorkerResponseQueue.h" />
     <ClInclude Include="WorkerThreadPool.h" />

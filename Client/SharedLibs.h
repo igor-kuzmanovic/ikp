@@ -1,46 +1,62 @@
-#pragma once
+﻿#pragma once
 
-#define WIN32_LEAN_AND_MEAN // Exclude rarely-used stuff from Windows headers
-
-// System libraries
+#include "../Lib/SharedConfig.h"
 
 #include <conio.h>
+#include <stdbool.h>
 #include <windows.h>
+#include <winsock2.h>
+#include <ws2tcpip.h>
 
-// Shared user libraries
+
 
 #include "LoggingLib.h"
 #include "NetworkLib.h"
 #include "Protocol.h"
-#include "SharedConfig.h"
 #include "Config.h"
 
-// Logging
-
-// https://stackoverflow.com/questions/26053959/what-does-va-args-in-a-macro-mean
 #define LOGGING_NAMESPACE "CL"
-#define PrintDebug(format, ...) PrintDebug(LOGGING_NAMESPACE, format, __VA_ARGS__)
-#define PrintInfo(format, ...) PrintInfo(LOGGING_NAMESPACE, format, __VA_ARGS__)
-#define PrintWarning(format, ...) PrintWarning(LOGGING_NAMESPACE, format, __VA_ARGS__)
-#define PrintError(format, ...) PrintError(LOGGING_NAMESPACE, format, __VA_ARGS__)
-#define PrintCritical(format, ...) PrintCritical(LOGGING_NAMESPACE, format, __VA_ARGS__)
 
-// API
 
-// Structures
+#undef PrintDebug
+#undef PrintInfo
+#undef PrintWarning
+#undef PrintError
+#undef PrintCritical
+
+#define PrintDebug(format, ...) PrintDebugFunc(LOGGING_NAMESPACE, format, ##__VA_ARGS__)
+#define PrintInfo(format, ...) PrintInfoFunc(LOGGING_NAMESPACE, format, ##__VA_ARGS__)
+#define PrintWarning(format, ...) PrintWarningFunc(LOGGING_NAMESPACE, format, ##__VA_ARGS__)
+#define PrintError(format, ...) PrintErrorFunc(LOGGING_NAMESPACE, format, ##__VA_ARGS__)
+#define PrintCritical(format, ...) PrintCriticalFunc(LOGGING_NAMESPACE, format, ##__VA_ARGS__)
 
 typedef struct {
-    CRITICAL_SECTION lock; // Synchronization primitive
-    HANDLE finishSignal; // Finish signal
-    bool finishFlag; // Finish flag
-    SOCKET connectSocket; // Connect socket
-    bool pauseSender; // Indicates if the sender should pause
+    int putSuccessCount;
+    int getSuccessCount;
+    int putCount;
+    int getCount;
+    int verificationComplete;
+    CRITICAL_SECTION lock;
+} TestVerification;
+
+typedef struct {
+    CRITICAL_SECTION lock; 
+    HANDLE finishSignal; 
+    bool finishFlag; 
+    SOCKET connectSocket; 
+    bool pauseSender; 
+    TestVerification testData;
+    int messageCount;
+    HANDLE getAllRequestsSentSignal;
+    HANDLE verificationCompleteSignal;
 } Context;
 
-// Functions
-
-int GenerateClientMessage(Message* message, const SOCKET clientSocket, const int id);
-
-// User libraries
+int GenerateAndSendClientMessage(SOCKET clientSocket, const int id);
+void PrintVerificationSummary(Context* context);
+int GetLocalPort(const SOCKET clientSocket);
+int GenerateKey(char* key, const int localPort, const DWORD processId, const int id);
+int GenerateRandomValue(char* value);
 
 #include "Context.h"
+
+

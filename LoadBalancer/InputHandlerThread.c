@@ -1,0 +1,32 @@
+﻿#include "InputHandlerThread.h"
+
+DWORD WINAPI InputHandlerThread(LPVOID lpParam) {
+
+    Context* context = (Context*)lpParam;
+
+    PrintInfo("Press 'q' to stop the load balancer.");
+
+    while (true) {
+        if (_kbhit()) { 
+            char ch = _getch();
+            
+            while (_kbhit()) {
+                _getch();
+            }
+            
+            if (ch == 'q' || ch == 'Q') {
+                PrintInfo("Shutdown signal received.");
+
+                SetFinishSignal(context);
+
+                break;
+            }
+        }
+
+        Sleep(INPUT_WAIT_TIME);
+    }
+
+    return TRUE;
+}
+
+

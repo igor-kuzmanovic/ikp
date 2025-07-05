@@ -1,11 +1,7 @@
-#pragma once
-
-// User libraries
+﻿#pragma once
 
 #include "SharedLibs.h"
 
-// API
-
-// Functions
-
 DWORD WINAPI SenderThread(LPVOID lpParam);
+
+

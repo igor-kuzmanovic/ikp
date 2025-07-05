@@ -131,12 +131,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Client.cpp" />
-    <ClCompile Include="Context.cpp" />
-    <ClCompile Include="InputHanderThread.cpp" />
-    <ClCompile Include="ReceiverThread.cpp" />
-    <ClCompile Include="SenderThread.cpp" />
-    <ClCompile Include="SharedLibs.cpp" />
+    <ClCompile Include="Client.c" />
+    <ClCompile Include="Context.c" />
+    <ClCompile Include="InputHanderThread.c" />
+    <ClCompile Include="ReceiverThread.c" />
+    <ClCompile Include="SenderThread.c" />
+    <ClCompile Include="SharedLibs.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.h" />

@@ -29,13 +29,13 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="NetworkLib.cpp">
+    <ClCompile Include="LoggingLib.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="LoggingLib.cpp">
+    <ClCompile Include="NetworkLib.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Protocol.cpp">
+    <ClCompile Include="Protocol.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

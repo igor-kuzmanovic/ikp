@@ -15,22 +15,22 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Client.cpp">
+    <ClCompile Include="Client.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SenderThread.cpp">
+    <ClCompile Include="Context.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ReceiverThread.cpp">
+    <ClCompile Include="InputHanderThread.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="InputHanderThread.cpp">
+    <ClCompile Include="ReceiverThread.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Context.cpp">
+    <ClCompile Include="SenderThread.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SharedLibs.cpp">
+    <ClCompile Include="SharedLibs.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

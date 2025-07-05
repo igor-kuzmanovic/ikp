@@ -1,27 +1,15 @@
-#pragma once
-
-// User libraries
+﻿#pragma once
 
 #include "SharedLibs.h"
 
-// API
-
-// Functions
-
-// Initializes a Context
 int ContextInitialize(Context* context);
 
-// Cleans up a Context
 int ContextDestroy(Context* context);
 
-// Sets the finish signal
 int SetFinishSignal(Context* context);
 
-// Gets the finish flag
 bool GetFinishFlag(Context* context);
 
-// Gets the pause sender flag
 bool GetPauseSender(Context* context);
 
-// Sets the pause sender flag
 bool SetPauseSender(Context* context, bool pause);

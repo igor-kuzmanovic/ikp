@@ -15,19 +15,31 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Worker.cpp">
+    <ClCompile Include="Context.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="InputHandlerThread.cpp">
+    <ClCompile Include="ExportQueue.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Context.cpp">
+    <ClCompile Include="ExportThread.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ReceiverThread.cpp">
+    <ClCompile Include="HashTable.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="HashTable.cpp">
+    <ClCompile Include="InputHandlerThread.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PeerListenerThread.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PeerManager.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ReceiverThread.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Worker.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -44,6 +56,12 @@
     <ClInclude Include="Context.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="ExportQueue.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ExportThread.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="SharedLibs.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -51,6 +69,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="HashTable.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PeerListenerThread.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PeerManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

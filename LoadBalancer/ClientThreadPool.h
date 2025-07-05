@@ -1,12 +1,6 @@
-#pragma once
-
-// User libraries
+﻿#pragma once
 
 #include "SharedLibs.h"
-
-// API
-
-// Functions
 
 int InitializeClientThreadPool(ClientThreadPool* pool);
 
@@ -17,3 +11,5 @@ int AssignClientDataReceiverThread(ClientThreadPool* pool, SOCKET clientSocket, 
 int ReturnClientDataReceiverThread(ClientThreadPool* pool, int threadIndex, ClientDataReceiverThreadData* data);
 
 int GetClientSocketByClientId(const ClientThreadPool* pool, const int clientId, SOCKET* clientSocket);
+
+

@@ -1,0 +1,103 @@
+﻿#include "Context.h"
+
+int ContextInitialize(Context* context) {
+    InitializeCriticalSection(&context->lock);
+    context->finishSignal = CreateSemaphore(0, 0, THREAD_COUNT, NULL);
+    if (context->finishSignal == NULL) {
+        PrintCritical("Failed to create a semaphore for the finish signal.");
+        return GetLastError();
+    }
+    
+    context->getAllRequestsSentSignal = CreateSemaphore(NULL, 0, 1, NULL);
+    if (context->getAllRequestsSentSignal == NULL) {
+        PrintCritical("Failed to create getAllRequestsSentSignal.");
+        CloseHandle(context->finishSignal);
+        return GetLastError();
+    }
+    
+    context->verificationCompleteSignal = CreateSemaphore(NULL, 0, 1, NULL);
+    if (context->verificationCompleteSignal == NULL) {
+        PrintCritical("Failed to create verificationCompleteSignal.");
+        CloseHandle(context->finishSignal);
+        CloseHandle(context->getAllRequestsSentSignal);
+        return GetLastError();
+    }
+    
+    context->finishFlag = false;
+    context->connectSocket = INVALID_SOCKET;
+    context->pauseSender = false;
+    
+    InitializeCriticalSection(&context->testData.lock);
+    context->testData.putCount = 0;
+    context->testData.getCount = 0;
+    context->testData.verificationComplete = 0;
+
+    return 0;
+}
+
+int ContextDestroy(Context* context) {
+    EnterCriticalSection(&context->lock);
+    context->connectSocket = INVALID_SOCKET;
+    if (context->finishSignal != NULL) {
+        CloseHandle(context->finishSignal);
+        context->finishSignal = NULL;
+    }
+    if (context->getAllRequestsSentSignal != NULL) {
+        CloseHandle(context->getAllRequestsSentSignal);
+        context->getAllRequestsSentSignal = NULL;
+    }
+    if (context->verificationCompleteSignal != NULL) {
+        CloseHandle(context->verificationCompleteSignal);
+        context->verificationCompleteSignal = NULL;
+    }
+    context->finishFlag = false;
+    LeaveCriticalSection(&context->lock);
+    DeleteCriticalSection(&context->lock);
+    
+    DeleteCriticalSection(&context->testData.lock);
+
+    return 0;
+}
+
+int SetFinishSignal(Context* context) {
+    EnterCriticalSection(&context->lock);
+
+    ReleaseSemaphore(context->finishSignal, THREAD_COUNT, NULL);
+    context->finishFlag = true;
+
+    LeaveCriticalSection(&context->lock);
+
+    return 0;
+}
+
+bool GetFinishFlag(Context* context) {
+    EnterCriticalSection(&context->lock);
+
+    bool flag = context->finishFlag;
+
+    LeaveCriticalSection(&context->lock);
+
+    return flag;
+}
+
+bool GetPauseSender(Context* context) {
+    EnterCriticalSection(&context->lock);
+
+    bool pause = context->pauseSender;
+
+    LeaveCriticalSection(&context->lock);
+
+    return pause;
+}
+
+bool SetPauseSender(Context* context, bool pause) {
+    EnterCriticalSection(&context->lock);
+
+    context->pauseSender = pause;
+
+    LeaveCriticalSection(&context->lock);
+
+    return true;
+}
+
+

@@ -15,49 +15,46 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="LoadBalancer.cpp">
+    <ClCompile Include="ClientDataReceiverThread.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="InputHandlerThread.cpp">
+    <ClCompile Include="ClientListenerThread.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Context.cpp">
+    <ClCompile Include="ClientRequestQueue.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ClientThreadPool.cpp">
+    <ClCompile Include="ClientThreadPool.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ClientListenerThread.cpp">
+    <ClCompile Include="ClientWorkerResponseDispatcherThread.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="WorkerListenerThread.cpp">
+    <ClCompile Include="Context.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ClientDataReceiverThread.cpp">
+    <ClCompile Include="InputHandlerThread.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ClientRequestQueue.cpp">
+    <ClCompile Include="LoadBalancer.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="WorkerList.cpp">
+    <ClCompile Include="WorkerClientRequestDispatcherThread.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="WorkerClientRequestDispatcherThread.cpp">
+    <ClCompile Include="WorkerDataReceiverThread.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="WorkerHealthCheckThread.cpp">
+    <ClCompile Include="WorkerList.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="WorkerDataReceiverThread.cpp">
+    <ClCompile Include="WorkerListenerThread.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="WorkerResponseQueue.cpp">
+    <ClCompile Include="WorkerResponseQueue.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="WorkerThreadPool.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ClientWorkerResponseDispatcherThread.cpp">
+    <ClCompile Include="WorkerThreadPool.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -96,9 +93,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="WorkerClientRequestDispatcherThread.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="WorkerHealthCheckThread.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="WorkerDataReceiverThread.h">

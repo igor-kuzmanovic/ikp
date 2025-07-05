@@ -131,17 +131,25 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Context.cpp" />
-    <ClCompile Include="HashTable.cpp" />
-    <ClCompile Include="InputHandlerThread.cpp" />
-    <ClCompile Include="ReceiverThread.cpp" />
-    <ClCompile Include="Worker.cpp" />
+    <ClCompile Include="Context.c" />
+    <ClCompile Include="ExportQueue.c" />
+    <ClCompile Include="ExportThread.c" />
+    <ClCompile Include="HashTable.c" />
+    <ClCompile Include="InputHandlerThread.c" />
+    <ClCompile Include="PeerListenerThread.c" />
+    <ClCompile Include="PeerManager.c" />
+    <ClCompile Include="ReceiverThread.c" />
+    <ClCompile Include="Worker.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Config.h" />
     <ClInclude Include="Context.h" />
+    <ClInclude Include="ExportQueue.h" />
+    <ClInclude Include="ExportThread.h" />
     <ClInclude Include="HashTable.h" />
     <ClInclude Include="InputHandlerThread.h" />
+    <ClInclude Include="PeerListenerThread.h" />
+    <ClInclude Include="PeerManager.h" />
     <ClInclude Include="ReceiverThread.h" />
     <ClInclude Include="SharedLibs.h" />
     <ClInclude Include="Worker.h" />

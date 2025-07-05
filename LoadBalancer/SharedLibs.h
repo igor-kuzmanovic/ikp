@@ -1,13 +1,12 @@
-#pragma once
+﻿#pragma once
 
-#define WIN32_LEAN_AND_MEAN // Exclude rarely-used stuff from Windows headers
-
-// System libraries
+#include "../Lib/SharedConfig.h"
 
 #include <conio.h>
 #include <windows.h>
-
-// Shared user libraries
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#include <stdbool.h>
 
 #include "LoggingLib.h"
 #include "NetworkLib.h"
@@ -15,125 +14,130 @@
 #include "SharedConfig.h"
 #include "Config.h"
 
-// Logging
-
-// https://stackoverflow.com/questions/26053959/what-does-va-args-in-a-macro-mean
 #define LOGGING_NAMESPACE "LB"
-#define PrintDebug(format, ...) PrintDebug(LOGGING_NAMESPACE, format, __VA_ARGS__)
-#define PrintInfo(format, ...) PrintInfo(LOGGING_NAMESPACE, format, __VA_ARGS__)
-#define PrintWarning(format, ...) PrintWarning(LOGGING_NAMESPACE, format, __VA_ARGS__)
-#define PrintError(format, ...) PrintError(LOGGING_NAMESPACE, format, __VA_ARGS__)
-#define PrintCritical(format, ...) PrintCritical(LOGGING_NAMESPACE, format, __VA_ARGS__)
 
-// API
+#undef PrintDebug
+#undef PrintInfo
+#undef PrintWarning
+#undef PrintError
+#undef PrintCritical
 
-// Structures
+#define PrintDebug(format, ...) PrintDebugFunc(LOGGING_NAMESPACE, format, ##__VA_ARGS__)
+#define PrintInfo(format, ...) PrintInfoFunc(LOGGING_NAMESPACE, format, ##__VA_ARGS__)
+#define PrintWarning(format, ...) PrintWarningFunc(LOGGING_NAMESPACE, format, ##__VA_ARGS__)
+#define PrintError(format, ...) PrintErrorFunc(LOGGING_NAMESPACE, format, ##__VA_ARGS__)
+#define PrintCritical(format, ...) PrintCriticalFunc(LOGGING_NAMESPACE, format, ##__VA_ARGS__)
 
 typedef struct WorkerNode {
-    int workerId;                     // Worker id
-    SOCKET workerSocket;              // Worker socket
-    struct WorkerNode* next;    // Next node in the list
-    struct WorkerNode* prev;    // Previous node in the list
+    int workerId;                     
+    SOCKET workerSocket;              
+    char workerAddress[256];          
+    int workerPeerPort;               
+    int isConnected;                  
+    int isReady;                      
+    struct WorkerNode* next;    
+    struct WorkerNode* prev;    
 } WorkerNode;
 
 typedef struct {
-    WorkerNode* head;       // Head of the circular list
-    WorkerNode* current;    // Pointer for Round Robin traversal
-    CRITICAL_SECTION lock;  // Protects access to the list
-    HANDLE notEmpty;        // Not empty signal
-    HANDLE notFull;         // Not full signal
-    int count;              // Number of workers
+    WorkerNode* head;       
+    WorkerNode* current;    
+    CRITICAL_SECTION lock;  
+    HANDLE notEmpty;        
+    HANDLE notFull;         
+    int count;
 } WorkerList;
 
 typedef struct {
-    HANDLE threads[MAX_CLIENTS];        // Client threads
-    SOCKET clientSockets[MAX_CLIENTS];  // Client sockets
-    int clientIds[MAX_CLIENTS];         // Client ids
-    BOOL isAvailable[MAX_CLIENTS];      // Availability of the threads
-    CRITICAL_SECTION lock;              // Protects access to the pool
-    HANDLE semaphore;                   // Semaphore for synchronization
-    int count;                          // Number of threads
+    HANDLE threads[MAX_CLIENTS];        
+    SOCKET clientSockets[MAX_CLIENTS];  
+    int clientIds[MAX_CLIENTS];         
+    BOOL isAvailable[MAX_CLIENTS];      
+    CRITICAL_SECTION lock;              
+    HANDLE semaphore;                   
+    int count;
 } ClientThreadPool;
 
 typedef struct {
-    HANDLE threads[MAX_WORKERS];        // Worker threads
-    SOCKET workerSockets[MAX_WORKERS];  // Worker sockets
-    BOOL isAvailable[MAX_WORKERS];      // Availability of the threads
-    CRITICAL_SECTION lock;              // Protects access to the pool
-    HANDLE semaphore;                   // Semaphore for synchronization
-    int count;                          // Number of threads
+    HANDLE threads[MAX_WORKERS];        
+    SOCKET workerSockets[MAX_WORKERS];  
+    BOOL isAvailable[MAX_WORKERS];      
+    CRITICAL_SECTION lock;              
+    HANDLE semaphore;                   
+    int count;
 } WorkerThreadPool;
 
 typedef struct {
-    SOCKET clientSocket;    // Client socket
-    int clientId;           // Client id
-    MessageBuffer data;     // Data from the client
+    SOCKET clientSocket;    
+    int clientId;           
+    char data[MAX_MESSAGE_SIZE]; 
+    uint16_t dataSize;      
+    MessageType messageType; 
 } ClientRequest;
 
 typedef struct {
-    ClientRequest queue[CLIENT_REQUEST_QUEUE_CAPACITY]; // Circular buffer to store requests
-    int head;                                           // Points to the front of the queue
-    int tail;                                           // Points to the end of the queue
-    int count;                                          // Number of items in the queue
-    CRITICAL_SECTION lock;                              // Protects access to the queue
-    HANDLE notEmpty;                                    // Not empty signal for consumers
-    HANDLE notFull;                                     // Not full signal for producers
+    ClientRequest queue[CLIENT_REQUEST_QUEUE_CAPACITY]; 
+    int head;                                           
+    int tail;                                           
+    int count;
+    CRITICAL_SECTION lock;                              
+    HANDLE notEmpty;                                    
+    HANDLE notFull;                                     
 } ClientRequestQueue;
 
 typedef struct {
-    SOCKET workerSocket;    // Worker socket
-    int workerId;           // Worker id
-    MessageBuffer data;     // Data from the worker
-    int clientId;           // Client id
+    SOCKET workerSocket;    
+    int workerId;           
+    char data[MAX_MESSAGE_SIZE]; 
+    uint16_t dataSize;      
+    MessageType messageType; 
+    int clientId;           
 } WorkerResponse;
 
 typedef struct {
-    WorkerResponse queue[WORKER_RESPONSE_QUEUE_CAPACITY];   // Circular buffer to store responses
-    int head;                                               // Points to the front of the queue
-    int tail;                                               // Points to the end of the queue
-    int count;                                              // Number of items in the queue
-    CRITICAL_SECTION lock;                                  // Protects access to the queue
-    HANDLE notEmpty;                                        // Not empty signal for consumers
-    HANDLE notFull;                                         // Not full signal for producers
+    WorkerResponse queue[WORKER_RESPONSE_QUEUE_CAPACITY];   
+    int head;                                               
+    int tail;                                               
+    int count;
+    CRITICAL_SECTION lock;                                  
+    HANDLE notEmpty;                                        
+    HANDLE notFull;                                         
 } WorkerResponseQueue;
 
-// Structure to hold a shared context
 typedef struct {
-    CRITICAL_SECTION lock;                      // Protects access to the context
-    HANDLE finishSignal;                        // Finish signal
-    bool finishFlag;                            // Stop flag
-    SOCKET clientListenSocket;                  // Client listen socket
-    SOCKET workerListenSocket;                  // Worker listen socket
-    addrinfo* clientConnectionResultingAddress; // Resulting address information for client connections
-    addrinfo* workerConnectionResultingAddress; // Resulting address information for worker connections
-    WorkerList* workerList;                     // Worker list
-    ClientThreadPool* clientThreadPool;         // Client thread pool
-    WorkerThreadPool* workerThreadPool;         // Worker thread pool
-    ClientRequestQueue* clientRequestQueue;     // Client request queue
-    WorkerResponseQueue* workerResponseQueue;   // Worker response queue
+    CRITICAL_SECTION lock;                      
+    HANDLE finishSignal;                        
+    int finishFlag;                             
+    SOCKET clientListenSocket;                  
+    SOCKET workerListenSocket;                  
+    struct addrinfo* clientConnectionResultingAddress; 
+    struct addrinfo* workerConnectionResultingAddress; 
+    WorkerList* workerList;                     
+    ClientThreadPool* clientThreadPool;         
+    WorkerThreadPool* workerThreadPool;         
+    ClientRequestQueue* clientRequestQueue;     
+    WorkerResponseQueue* workerResponseQueue;   
 } Context;
 
 typedef struct {
-    Context* context;       // Pointer to the context
-    SOCKET clientSocket;    // Client socket
-    int clientId;           // Client id
-    int threadIndex;        // Index of the thread in the thread pool
+    Context* context;
+    SOCKET clientSocket;    
+    int clientId;           
+    int threadIndex;        
 } ClientDataReceiverThreadData;
 
 typedef struct {
-    Context* context;       // Pointer to the context
-    SOCKET workerSocket;    // Worker socket
-    int workerId;           // Worker id
-    int threadIndex;        // Index of the thread in the thread pool
+    Context* context;
+    SOCKET workerSocket;    
+    int workerId;           
+    int threadIndex;        
 } WorkerDataReceiverThreadData;
 
 typedef struct {
-    Context* context;       // Pointer to the context
-    SOCKET workerSocket;    // Worker socket
-    int workerId;           // Worker id
+    Context* context;
+    SOCKET workerSocket;    
+    int workerId;           
 } WorkerHandlerThreadData;
-
-// User libraries
 
 #include "Context.h"
 #include "ClientThreadPool.h"

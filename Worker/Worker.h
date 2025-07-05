@@ -1,14 +1,10 @@
-#pragma once
-
-// User libraries
+﻿#pragma once
 
 #include "SharedLibs.h"
 #include "InputHandlerThread.h"
 #include "ReceiverThread.h"
+#include "PeerListenerThread.h"
 
-// API
-
-// Functions
-
-// Cleans up everything
 static void CleanupFull(Context* context, HANDLE threads[], int threadCount);
+
+

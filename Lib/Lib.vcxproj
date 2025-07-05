@@ -146,9 +146,9 @@
     <ClInclude Include="SharedConfig.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="LoggingLib.cpp" />
-    <ClCompile Include="NetworkLib.cpp" />
-    <ClCompile Include="Protocol.cpp" />
+    <ClCompile Include="LoggingLib.c" />
+    <ClCompile Include="NetworkLib.c" />
+    <ClCompile Include="Protocol.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
