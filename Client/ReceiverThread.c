@@ -9,7 +9,6 @@ DWORD WINAPI ReceiverThread(LPVOID lpParam) {
     int serverFullSleepTimeMultiplier = 1;
     int errorCount = 0;
     char buffer[MAX_MESSAGE_SIZE];
-    ErrorCode result;
     char key[MAX_KEY_SIZE + 1];
     char value[MAX_VALUE_SIZE + 1];
     ErrorCode errorCode;
@@ -26,12 +25,15 @@ DWORD WINAPI ReceiverThread(LPVOID lpParam) {
 
             switch (messageType) {
             case MSG_PUT_RESPONSE: {
-                if (ReceivePutResponse(buffer, actualSize, &result, key) == 0) {
-                    if (result == ERR_NONE) {
+                if (ReceivePutResponse(buffer, actualSize, &errorCode, key) == 0) {
+                    EnterCriticalSection(&context->testData.lock);
+                    if (errorCode == ERR_NONE) {
                         PrintDebug("PUT request for key '%s' was successful.", key);
+                        context->testData.putSuccessCount++;
                     } else {
-                        PrintWarning("PUT request for key '%s' failed: %s", key, GetErrorCodeName(result));
+                        PrintWarning("PUT request for key '%s' failed: %s", key, GetErrorCodeName(errorCode));
                     }
+                    LeaveCriticalSection(&context->testData.lock);
                 } else {
                     PrintError("Failed to parse PUT response message");
                 }
@@ -39,14 +41,13 @@ DWORD WINAPI ReceiverThread(LPVOID lpParam) {
             }
 
             case MSG_GET_RESPONSE: {
-                if (ReceiveGetResponse(buffer, actualSize, &result, key, value) == 0) {
+                if (ReceiveGetResponse(buffer, actualSize, &errorCode, key, value) == 0) {
                     EnterCriticalSection(&context->testData.lock);
-                    context->testData.getCount++;
-                    if (result == ERR_NONE) {
+                    if (errorCode == ERR_NONE) {
                         PrintDebug("GET request for key '%s' returned value: '%s'", key, value);
                         context->testData.getSuccessCount++;
                     } else {
-                        PrintWarning("GET request for key '%s' failed: %s", key, GetErrorCodeName(result));
+                        PrintWarning("GET request for key '%s' failed: %s", key, GetErrorCodeName(errorCode));
                     }
                     if (context->testData.getCount >= context->messageCount) {
                         ReleaseSemaphore(context->verificationCompleteSignal, 1, NULL);
@@ -66,7 +67,6 @@ DWORD WINAPI ReceiverThread(LPVOID lpParam) {
             case MSG_ERROR: {
                 if (ReceiveError(buffer, actualSize, &errorCode, errorMessage) == 0) {
                     PrintError("Server error (%s): %s", GetErrorCodeName(errorCode), errorMessage);
-
                     if (errorCode == ERR_SERVER_BUSY) {
                         PrintDebug("Server is busy, pausing the sender.");
                         SetPauseSender(context, true);

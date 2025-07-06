@@ -58,6 +58,9 @@ DWORD WINAPI SenderThread(LPVOID lpParam) {
 
             keyLength = GenerateKey(key, localPort, processId, verificationCounter + 1);
             if (keyLength > 0 && keyLength <= MAX_KEY_SIZE) {
+                EnterCriticalSection(&context->testData.lock);
+                context->testData.getCount++;
+                LeaveCriticalSection(&context->testData.lock);
                 sendResult = SendGet(context->connectSocket, key);
                 if (sendResult > 0) {
                     PrintDebug("Verification GET request #%d sent for key '%s'", verificationCounter + 1, key);
@@ -76,22 +79,23 @@ DWORD WINAPI SenderThread(LPVOID lpParam) {
             keyLength = GenerateKey(key, localPort, processId, messageCounter + 1);
             if (keyLength <= 0 || keyLength > MAX_KEY_SIZE) {
                 PrintError("Failed to generate a valid key, length: %d.", keyLength);
+                Sleep(MESSAGE_SEND_WAIT_TIME);
                 continue;
             }
 
             valueLength = GenerateRandomValue(value);
             if (valueLength <= 0 || valueLength > MAX_VALUE_SIZE) {
                 PrintError("Failed to generate a valid value, length: %d.", valueLength);
+                Sleep(MESSAGE_SEND_WAIT_TIME);
                 continue;
             }
 
+            EnterCriticalSection(&context->testData.lock);
+            context->testData.putCount++;
+            LeaveCriticalSection(&context->testData.lock);
             sendResult = SendPut(context->connectSocket, key, value);
             if (sendResult > 0) {
                 PrintDebug("PUT message #%d sent successfully for key '%s'", messageCounter + 1, key);
-                EnterCriticalSection(&context->testData.lock);
-                context->testData.putCount++;
-                context->testData.putSuccessCount++;
-                LeaveCriticalSection(&context->testData.lock);
                 messageCounter++;
             } else if (sendResult == 0) {
                 PrintInfo("Server disconnected.");

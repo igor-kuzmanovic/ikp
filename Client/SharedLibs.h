@@ -8,15 +8,12 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 
-
-
 #include "LoggingLib.h"
 #include "NetworkLib.h"
 #include "Protocol.h"
 #include "Config.h"
 
 #define LOGGING_NAMESPACE "CL"
-
 
 #undef PrintDebug
 #undef PrintInfo
@@ -40,11 +37,11 @@ typedef struct {
 } TestVerification;
 
 typedef struct {
-    CRITICAL_SECTION lock; 
-    HANDLE finishSignal; 
-    bool finishFlag; 
-    SOCKET connectSocket; 
-    bool pauseSender; 
+    CRITICAL_SECTION lock;
+    HANDLE finishSignal;
+    bool finishFlag;
+    SOCKET connectSocket;
+    bool pauseSender;
     TestVerification testData;
     int messageCount;
     HANDLE getAllRequestsSentSignal;
@@ -58,5 +55,3 @@ int GenerateKey(char* key, const int localPort, const DWORD processId, const int
 int GenerateRandomValue(char* value);
 
 #include "Context.h"
-
-

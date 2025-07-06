@@ -2,11 +2,13 @@
 
 void PrintVerificationSummary(Context* context) {
     EnterCriticalSection(&context->testData.lock);
+
     PrintInfo("===== VERIFICATION SUMMARY =====");
     PrintInfo("Total messages: %d", context->messageCount);
     PrintInfo("PUT success: %d/%d (%.1f%%)", context->testData.putSuccessCount, context->messageCount, (float)context->testData.putSuccessCount / context->messageCount * 100.0f);
     PrintInfo("GET success: %d/%d (%.1f%%)", context->testData.getSuccessCount, context->messageCount, (float)context->testData.getSuccessCount / context->messageCount * 100.0f);
     PrintInfo("================================");
+
     LeaveCriticalSection(&context->testData.lock);
 }
 
@@ -33,13 +35,13 @@ int GenerateKey(char* key, const int localPort, const DWORD processId, const int
 
 int GenerateRandomValue(char* value) {
     int randomValue = rand();
-    int length = (randomValue % (MAX_VALUE_SIZE - 1)) + 1; 
-    
+    int length = (randomValue % (MAX_VALUE_SIZE - 1)) + 1;
+
     for (int i = 0; i < length; i++) {
         value[i] = ('A' + rand() % 26);
     }
     value[length] = '\0';
-    
+
     return length;
 }
 
@@ -81,5 +83,3 @@ int GenerateAndSendClientMessage(SOCKET clientSocket, const int id) {
 
     return result;
 }
-
-

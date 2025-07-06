@@ -13,8 +13,6 @@ int main(void) {
 
     iResult = InitializeWindowsSockets();
     if (iResult != 0) {
-        PrintCritical("'WSAStartup' failed with error %d.", WSAGetLastError());
-
         return EXIT_FAILURE;
     }
 

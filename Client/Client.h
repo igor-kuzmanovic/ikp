@@ -6,5 +6,3 @@
 #include "SenderThread.h"
 
 static void CleanupFull(Context* context, HANDLE threads[], int threadCount);
-
-

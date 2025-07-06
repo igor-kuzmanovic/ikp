@@ -7,7 +7,7 @@ int main() {
 
     int workerId = GetCurrentProcessId();
     int peerPort = WORKER_PEER_PORT_BASE + (workerId % 1000);
-    
+
     PrintInfo("Worker Process ID: %d, Peer Port: %d", workerId, peerPort);
 
     HANDLE inputHandlerThread = NULL;
@@ -18,8 +18,6 @@ int main() {
 
     iResult = InitializeWindowsSockets();
     if (iResult != 0) {
-        PrintCritical("'WSAStartup' failed with error %d.", WSAGetLastError());
-
         return EXIT_FAILURE;
     }
 
@@ -60,9 +58,9 @@ int main() {
     serverAddress.sin_port = htons(SERVER_WORKER_PORT);
 
     SetSocketNonBlocking(context.connectSocket);
-    
+
     PrintInfo("Connecting to the server at %s:%d...", SERVER_ADDRESS, SERVER_WORKER_PORT);
-    
+
     iResult = SafeConnect(context.connectSocket, (SOCKADDR*)&serverAddress, sizeof(serverAddress), 10);
     if (iResult != 0) {
         PrintInfo("Failed to connect to LoadBalancer. Make sure it is running.");
@@ -93,7 +91,7 @@ int main() {
         return EXIT_FAILURE;
     }
     threads[2] = peerListenerThread;
-    
+
     exportThread = CreateThread(NULL, 0, ExportThread, &context, 0, NULL);
     if (exportThread == NULL) {
         PrintCritical("'CreateThread' for ExportThread failed with error: %d.", GetLastError());
@@ -103,13 +101,13 @@ int main() {
         return EXIT_FAILURE;
     }
     threads[3] = exportThread;
-    
+
     Sleep(WORKER_STARTUP_DELAY);
-    
+
     EnterCriticalSection(&context.lock);
     iResult = SendWorkerReady(context.connectSocket, workerId, peerPort);
     LeaveCriticalSection(&context.lock);
-    
+
     if (iResult > 0) {
         PrintDebug("Worker ready message sent successfully (%d bytes).", iResult);
     } else {
@@ -122,7 +120,7 @@ int main() {
 
     PrintInfo("Press any key to exit.");
 
-    int _ = _getch(); 
+    int _ = _getch();
 
     return EXIT_SUCCESS;
 }

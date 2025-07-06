@@ -7,14 +7,14 @@ int ContextInitialize(Context* context) {
         PrintCritical("Failed to create a semaphore for the finish signal.");
         return GetLastError();
     }
-    
+
     context->getAllRequestsSentSignal = CreateSemaphore(NULL, 0, 1, NULL);
     if (context->getAllRequestsSentSignal == NULL) {
         PrintCritical("Failed to create getAllRequestsSentSignal.");
         CloseHandle(context->finishSignal);
         return GetLastError();
     }
-    
+
     context->verificationCompleteSignal = CreateSemaphore(NULL, 0, 1, NULL);
     if (context->verificationCompleteSignal == NULL) {
         PrintCritical("Failed to create verificationCompleteSignal.");
@@ -22,12 +22,14 @@ int ContextInitialize(Context* context) {
         CloseHandle(context->getAllRequestsSentSignal);
         return GetLastError();
     }
-    
+
     context->finishFlag = false;
     context->connectSocket = INVALID_SOCKET;
     context->pauseSender = false;
-    
+
     InitializeCriticalSection(&context->testData.lock);
+    context->testData.putSuccessCount = 0;
+    context->testData.getSuccessCount = 0;
     context->testData.putCount = 0;
     context->testData.getCount = 0;
     context->testData.verificationComplete = 0;
@@ -37,6 +39,7 @@ int ContextInitialize(Context* context) {
 
 int ContextDestroy(Context* context) {
     EnterCriticalSection(&context->lock);
+
     context->connectSocket = INVALID_SOCKET;
     if (context->finishSignal != NULL) {
         CloseHandle(context->finishSignal);
@@ -51,10 +54,10 @@ int ContextDestroy(Context* context) {
         context->verificationCompleteSignal = NULL;
     }
     context->finishFlag = false;
-    LeaveCriticalSection(&context->lock);
-    DeleteCriticalSection(&context->lock);
-    
     DeleteCriticalSection(&context->testData.lock);
+    LeaveCriticalSection(&context->lock);
+
+    DeleteCriticalSection(&context->lock);
 
     return 0;
 }
