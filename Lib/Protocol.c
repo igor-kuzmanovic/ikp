@@ -59,7 +59,7 @@ int ProtocolReceive(SOCKET socket, MessageType* type, void* buffer, uint16_t buf
 
     MessageHeader header;
     int recvResult = ProtocolReceiveBuffer(socket, &header, sizeof(header));
-    
+
     if (recvResult != 0) {
         if (recvResult == -2) {
             PrintInfo("ProtocolReceive: Connection closed (error code %d)", recvResult);
@@ -76,12 +76,12 @@ int ProtocolReceive(SOCKET socket, MessageType* type, void* buffer, uint16_t buf
 
     *type = (MessageType)header.type;
     *actualSize = ntohs(header.length);
-    
+
     PrintDebug("Received header: type=%u, length=%u", header.type, *actualSize);
 
-    if (*actualSize > MAX_MESSAGE_SIZE * 4) { 
+    if (*actualSize > MAX_MESSAGE_SIZE * 4) {
         PrintError("ProtocolReceive: Suspicious message size %u, possible protocol corruption", *actualSize);
-        return -4; 
+        return -4;
     }
 
     if (*actualSize > 0) {
@@ -286,43 +286,43 @@ int SendWorkerNotReady(SOCKET socket, uint32_t workerId) {
 int SendWorkerRegistryStart(SOCKET socket, uint32_t totalWorkers) {
     uint8_t buffer[MAX_MESSAGE_SIZE];
     uint16_t offset = 0;
-    
+
     offset += WriteUInt32(buffer + offset, totalWorkers);
-    
+
     return ProtocolSend(socket, MSG_WORKER_REGISTRY_START, buffer, offset);
 }
 
 int SendWorkerEntry(SOCKET socket, uint32_t workerId, const char* address, uint16_t port, uint8_t shouldExportData) {
     uint8_t buffer[MAX_MESSAGE_SIZE];
     uint16_t offset = 0;
-    
+
     offset += WriteUInt32(buffer + offset, workerId);
-    
+
     uint16_t addrLen = (uint16_t)strlen(address);
     if (addrLen > 255) addrLen = 255;
     offset += WriteUInt16(buffer + offset, addrLen);
     memcpy(buffer + offset, address, addrLen);
     offset += addrLen;
-    
+
     offset += WriteUInt16(buffer + offset, port);
     offset += WriteUInt8(buffer + offset, shouldExportData);
-    
+
     return ProtocolSend(socket, MSG_WORKER_ENTRY, buffer, offset);
 }
 
 int SendWorkerRegistryEnd(SOCKET socket) {
     uint8_t buffer[MAX_MESSAGE_SIZE];
     uint16_t offset = 0;
-    
+
     return ProtocolSend(socket, MSG_WORKER_REGISTRY_END, buffer, offset);
 }
 
 int SendDataExportStart(SOCKET socket, uint32_t totalEntries) {
     uint8_t buffer[MAX_MESSAGE_SIZE];
     uint16_t offset = 0;
-    
+
     offset += WriteUInt32(buffer + offset, totalEntries);
-    
+
     return ProtocolSend(socket, MSG_DATA_EXPORT_START, buffer, offset);
 }
 
@@ -330,18 +330,18 @@ int SendDataEntry(SOCKET socket, const char* key, const char* value) {
     if (!ValidateKey(key) || !ValidateValue(value)) {
         return -1;
     }
-    
+
     uint8_t buffer[MAX_MESSAGE_SIZE];
     uint16_t offset = 0;
-    
+
     uint16_t keyLen = (uint16_t)strlen(key);
     offset += WriteUInt16(buffer + offset, keyLen);
     offset += WriteString(buffer + offset, key);
-    
+
     uint16_t valueLen = (uint16_t)strlen(value);
     offset += WriteUInt16(buffer + offset, valueLen);
     offset += WriteString(buffer + offset, value);
-    
+
     return ProtocolSend(socket, MSG_DATA_ENTRY, buffer, offset);
 }
 
@@ -541,167 +541,156 @@ int ReadString(const void* buffer, char* str, size_t maxLen) {
 
 int ReceivePut(const char* buffer, uint16_t bufferSize, char* key, char* value) {
     uint16_t offset = 0;
-    
+
     if (offset + 2 > bufferSize) return -1;
     uint16_t keyLen = ReadUInt16(buffer + offset);
     offset += 2;
-    
+
     if (keyLen > MAX_KEY_SIZE || offset + keyLen > bufferSize) return -1;
-    memcpy(key, buffer + offset, keyLen);
-    key[keyLen] = '\0';
+    ReadString(buffer + offset, key, keyLen + 1);
     offset += keyLen;
-    
+
     if (offset + 2 > bufferSize) return -1;
     uint16_t valueLen = ReadUInt16(buffer + offset);
     offset += 2;
-    
+
     if (valueLen > MAX_VALUE_SIZE || offset + valueLen > bufferSize) return -1;
-    memcpy(value, buffer + offset, valueLen);
-    value[valueLen] = '\0';
-    
+    ReadString(buffer + offset, value, valueLen + 1);
+
     return 0;
 }
 
 int ReceivePutResponse(const char* buffer, uint16_t bufferSize, ErrorCode* result, char* key) {
     uint16_t offset = 0;
-    
+
     if (offset + 1 > bufferSize) return -1;
     *result = (ErrorCode)ReadUInt8(buffer + offset);
     offset += 1;
-    
+
     if (offset + 2 > bufferSize) return -1;
     uint16_t keyLen = ReadUInt16(buffer + offset);
     offset += 2;
-    
+
     if (keyLen > MAX_KEY_SIZE || offset + keyLen > bufferSize) return -1;
-    memcpy(key, buffer + offset, keyLen);
-    key[keyLen] = '\0';
-    
+    ReadString(buffer + offset, key, keyLen + 1);
+
     return 0;
 }
 
 int ReceiveGet(const char* buffer, uint16_t bufferSize, char* key) {
     uint16_t offset = 0;
-    
+
     if (offset + 2 > bufferSize) return -1;
     uint16_t keyLen = ReadUInt16(buffer + offset);
     offset += 2;
-    
+
     if (keyLen > MAX_KEY_SIZE || offset + keyLen > bufferSize) return -1;
-    memcpy(key, buffer + offset, keyLen);
-    key[keyLen] = '\0';
-    
+    ReadString(buffer + offset, key, keyLen + 1);
+
     return 0;
 }
 
 int ReceiveGetResponse(const char* buffer, uint16_t bufferSize, ErrorCode* result, char* key, char* value) {
     uint16_t offset = 0;
-    
+
     if (offset + 1 > bufferSize) return -1;
     *result = (ErrorCode)ReadUInt8(buffer + offset);
     offset += 1;
-    
+
     if (offset + 2 > bufferSize) return -1;
     uint16_t keyLen = ReadUInt16(buffer + offset);
     offset += 2;
-    
+
     if (keyLen > MAX_KEY_SIZE || offset + keyLen > bufferSize) return -1;
-    memcpy(key, buffer + offset, keyLen);
-    key[keyLen] = '\0';
+    ReadString(buffer + offset, key, keyLen + 1);
     offset += keyLen;
-    
+
     if (offset + 2 > bufferSize) return -1;
     uint16_t valueLen = ReadUInt16(buffer + offset);
     offset += 2;
-    
+
     if (valueLen > 0) {
         if (valueLen > MAX_VALUE_SIZE || offset + valueLen > bufferSize) return -1;
-        memcpy(value, buffer + offset, valueLen);
-        value[valueLen] = '\0';
+        ReadString(buffer + offset, value, valueLen + 1);
     } else {
         value[0] = '\0';
     }
-    
+
     return 0;
 }
 
 int ReceiveStoreResponse(const char* buffer, uint16_t bufferSize, ErrorCode* result, uint32_t* clientId, char* key) {
     uint16_t offset = 0;
-    
+
     if (offset + 1 > bufferSize) return -1;
     *result = (ErrorCode)ReadUInt8(buffer + offset);
     offset += 1;
-    
+
     if (offset + 4 > bufferSize) return -1;
     *clientId = ReadUInt32(buffer + offset);
     offset += 4;
-    
+
     if (offset + 2 > bufferSize) return -1;
     uint16_t keyLen = ReadUInt16(buffer + offset);
     offset += 2;
-    
+
     if (keyLen > MAX_KEY_SIZE || offset + keyLen > bufferSize) return -1;
-    memcpy(key, buffer + offset, keyLen);
-    key[keyLen] = '\0';
-    
+    ReadString(buffer + offset, key, keyLen + 1);
+
     return 0;
 }
 
 int ReceiveRetrieveResponse(const char* buffer, uint16_t bufferSize, ErrorCode* result, uint32_t* clientId, char* key, char* value) {
     uint16_t offset = 0;
-    
+
     if (offset + 1 > bufferSize) return -1;
     *result = (ErrorCode)ReadUInt8(buffer + offset);
     offset += 1;
-    
+
     if (offset + 4 > bufferSize) return -1;
     *clientId = ReadUInt32(buffer + offset);
     offset += 4;
-    
+
     if (offset + 2 > bufferSize) return -1;
     uint16_t keyLen = ReadUInt16(buffer + offset);
     offset += 2;
-    
+
     if (keyLen > MAX_KEY_SIZE || offset + keyLen > bufferSize) return -1;
-    memcpy(key, buffer + offset, keyLen);
-    key[keyLen] = '\0';
+    ReadString(buffer + offset, key, keyLen + 1);
     offset += keyLen;
-    
+
     if (offset + 2 > bufferSize) return -1;
     uint16_t valueLen = ReadUInt16(buffer + offset);
     offset += 2;
-    
+
     if (valueLen > 0) {
         if (valueLen > MAX_VALUE_SIZE || offset + valueLen > bufferSize) return -1;
-        memcpy(value, buffer + offset, valueLen);
-        value[valueLen] = '\0';
+        ReadString(buffer + offset, value, valueLen + 1);
     } else {
         value[0] = '\0';
     }
-    
+
     return 0;
 }
 
 int ReceiveDataEntry(const char* buffer, uint16_t bufferSize, char* key, char* value) {
     uint16_t offset = 0;
-    
+
     if (offset + 2 > bufferSize) return -1;
     uint16_t keyLen = ReadUInt16(buffer + offset);
     offset += 2;
-    
+
     if (keyLen > MAX_KEY_SIZE || offset + keyLen > bufferSize) return -1;
-    memcpy(key, buffer + offset, keyLen);
-    key[keyLen] = '\0';
+    ReadString(buffer + offset, key, keyLen + 1);
     offset += keyLen;
-    
+
     if (offset + 2 > bufferSize) return -1;
     uint16_t valueLen = ReadUInt16(buffer + offset);
     offset += 2;
-    
+
     if (valueLen > MAX_VALUE_SIZE || offset + valueLen > bufferSize) return -1;
-    memcpy(value, buffer + offset, valueLen);
-    value[valueLen] = '\0';
-    
+    ReadString(buffer + offset, value, valueLen + 1);
+
     return 0;
 }
 
@@ -711,24 +700,22 @@ int ReceivePeerNotify(const char* buffer, uint16_t bufferSize, char* key, char* 
     }
 
     uint16_t offset = 0;
-    
+
     if (offset + 2 > bufferSize) return -1;
     uint16_t keyLen = ReadUInt16(buffer + offset);
     offset += 2;
-    
+
     if (keyLen > MAX_KEY_SIZE || offset + keyLen > bufferSize) return -1;
-    memcpy(key, buffer + offset, keyLen);
-    key[keyLen] = '\0';
+    ReadString(buffer + offset, key, keyLen + 1);
     offset += keyLen;
-    
+
     if (offset + 2 > bufferSize) return -1;
     uint16_t valueLen = ReadUInt16(buffer + offset);
     offset += 2;
-    
+
     if (valueLen > MAX_VALUE_SIZE || offset + valueLen > bufferSize) return -1;
-    memcpy(value, buffer + offset, valueLen);
-    value[valueLen] = '\0';
-    
+    ReadString(buffer + offset, value, valueLen + 1);
+
     return 0;
 }
 
@@ -738,7 +725,7 @@ int ReceiveWorkerRegistryStart(const char* buffer, uint16_t bufferSize, uint32_t
     }
 
     if (bufferSize < 4) return -1;
-    
+
     *totalWorkers = ReadUInt32(buffer);
     return 0;
 }
@@ -749,24 +736,23 @@ int ReceiveError(const char* buffer, uint16_t bufferSize, ErrorCode* errorCode, 
     }
 
     uint16_t offset = 0;
-    
+
     if (offset >= bufferSize) return -1;
     *errorCode = (ErrorCode)ReadUInt8(buffer + offset);
     offset += 1;
-    
+
     if (offset + 2 > bufferSize) return -1;
     uint16_t messageLen = ReadUInt16(buffer + offset);
     offset += 2;
-    
+
     if (messageLen > 0) {
         if (offset + messageLen > bufferSize) return -1;
         if (messageLen >= 256) messageLen = 255;
-        memcpy(message, buffer + offset, messageLen);
-        message[messageLen] = '\0';
+        ReadString(buffer + offset, message, messageLen + 1);
     } else {
         message[0] = '\0';
     }
-    
+
     return 0;
 }
 
@@ -776,101 +762,97 @@ int ReceiveDataExportStart(const char* buffer, uint16_t bufferSize, uint32_t* to
     }
 
     if (bufferSize < 4) return -1;
-    
+
     *totalEntries = ReadUInt32(buffer);
     return 0;
 }
 
 int ReceiveWorkerReady(const char* buffer, uint16_t bufferSize, uint32_t* workerId, uint16_t* peerPort) {
     uint16_t offset = 0;
-    
+
     if (offset + 4 > bufferSize) return -1;
     *workerId = ReadUInt32(buffer + offset);
     offset += 4;
-    
+
     if (offset + 2 > bufferSize) return -1;
     *peerPort = ReadUInt16(buffer + offset);
-    
+
     return 0;
 }
 
 int ReceiveWorkerNotReady(const char* buffer, uint16_t bufferSize, uint32_t* workerId) {
     uint16_t offset = 0;
-    
+
     if (offset + 4 > bufferSize) return -1;
     *workerId = ReadUInt32(buffer + offset);
-    
+
     return 0;
 }
 
 int ReceiveStoreRequest(const char* buffer, uint16_t bufferSize, uint32_t* clientId, char* key, char* value) {
     uint16_t offset = 0;
-    
+
     if (offset + 4 > bufferSize) return -1;
     *clientId = ReadUInt32(buffer + offset);
     offset += 4;
-    
+
     if (offset + 2 > bufferSize) return -1;
     uint16_t keyLen = ReadUInt16(buffer + offset);
     offset += 2;
-    
+
     if (keyLen > MAX_KEY_SIZE || offset + keyLen > bufferSize) return -1;
-    memcpy(key, buffer + offset, keyLen);
-    key[keyLen] = '\0';
+    ReadString(buffer + offset, key, keyLen + 1);
     offset += keyLen;
-    
+
     if (offset + 2 > bufferSize) return -1;
     uint16_t valueLen = ReadUInt16(buffer + offset);
     offset += 2;
-    
+
     if (valueLen > MAX_VALUE_SIZE || offset + valueLen > bufferSize) return -1;
-    memcpy(value, buffer + offset, valueLen);
-    value[valueLen] = '\0';
-    
+    ReadString(buffer + offset, value, valueLen + 1);
+
     return 0;
 }
 
 int ReceiveRetrieveRequest(const char* buffer, uint16_t bufferSize, uint32_t* clientId, char* key) {
     uint16_t offset = 0;
-    
+
     if (offset + 4 > bufferSize) return -1;
     *clientId = ReadUInt32(buffer + offset);
     offset += 4;
-    
+
     if (offset + 2 > bufferSize) return -1;
     uint16_t keyLen = ReadUInt16(buffer + offset);
     offset += 2;
-    
+
     if (keyLen > MAX_KEY_SIZE || offset + keyLen > bufferSize) return -1;
-    memcpy(key, buffer + offset, keyLen);
-    key[keyLen] = '\0';
-    
+    ReadString(buffer + offset, key, keyLen + 1);
+
     return 0;
 }
 
 int ReceiveWorkerEntry(const char* buffer, uint16_t bufferSize, uint32_t* workerId, char* address, uint16_t* port, uint8_t* shouldExportData) {
     uint16_t offset = 0;
-    
+
     if (offset + 4 > bufferSize) return -1;
     *workerId = ReadUInt32(buffer + offset);
     offset += 4;
-    
+
     if (offset + 2 > bufferSize) return -1;
     uint16_t addrLen = ReadUInt16(buffer + offset);
     offset += 2;
-    
+
     if (addrLen >= 256 || offset + addrLen > bufferSize) return -1;
-    memcpy(address, buffer + offset, addrLen);
-    address[addrLen] = '\0';
+    ReadString(buffer + offset, address, addrLen + 1);
     offset += addrLen;
-    
+
     if (offset + 2 > bufferSize) return -1;
     *port = ReadUInt16(buffer + offset);
     offset += 2;
-    
+
     if (offset + 1 > bufferSize) return -1;
     *shouldExportData = ReadUInt8(buffer + offset);
-    
+
     return 0;
 }
 

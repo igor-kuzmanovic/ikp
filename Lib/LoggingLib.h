@@ -21,5 +21,3 @@ void PrintInfoFunc(const char* namespc, const char* message, ...);
 void PrintWarningFunc(const char* namespc, const char* message, ...);
 void PrintErrorFunc(const char* namespc, const char* message, ...);
 void PrintCriticalFunc(const char* namespc, const char* message, ...);
-
-

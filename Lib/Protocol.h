@@ -21,7 +21,7 @@ typedef enum {
     MSG_PUT_RESPONSE = 2,
     MSG_GET = 3,
     MSG_GET_RESPONSE = 4,
-    
+
     MSG_STORE_REQUEST = 10,
     MSG_STORE_RESPONSE = 11,
     MSG_RETRIEVE_REQUEST = 12,
@@ -34,9 +34,9 @@ typedef enum {
     MSG_DATA_EXPORT_END = 19,
     MSG_WORKER_READY = 20,
     MSG_WORKER_NOT_READY = 21,
-    
+
     MSG_PEER_NOTIFY = 30,
-    
+
     MSG_SHUTDOWN = 90,
     MSG_ERROR = 91
 } MessageType;
@@ -98,11 +98,11 @@ int ValidateKey(const char* key);
 int ValidateValue(const char* value);
 
 int WriteUInt8(void* buffer, uint8_t value);
-int WriteUInt16(void* buffer, uint16_t value); 
+int WriteUInt16(void* buffer, uint16_t value);
 int WriteUInt32(void* buffer, uint32_t value);
-int WriteString(void* buffer, const char* str);  
+int WriteString(void* buffer, const char* str);
 
 uint8_t ReadUInt8(const void* buffer);
 uint16_t ReadUInt16(const void* buffer);
-uint32_t ReadUInt32(const void* buffer);  
+uint32_t ReadUInt32(const void* buffer);
 int ReadString(const void* buffer, char* str, size_t maxLen);

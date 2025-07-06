@@ -24,33 +24,29 @@ int SafeSend(SOCKET socket, const char* buffer, int length) {
     }
 
     int bytesSent = send(socket, buffer, length, 0);
-    
+
     if (bytesSent == SOCKET_ERROR) {
         int error = WSAGetLastError();
-        
+
         if (error == WSAEWOULDBLOCK) {
             return 0;
-        }
-        else if (error == WSANOTINITIALISED) {
+        } else if (error == WSANOTINITIALISED) {
             return -2;
-        }
-        else if (error == WSAECONNRESET || error == WSAECONNABORTED) {
+        } else if (error == WSAECONNRESET || error == WSAECONNABORTED) {
             return -2;
-        }
-        else if (error == WSAENETUNREACH || error == WSAEHOSTUNREACH) {
+        } else if (error == WSAENETUNREACH || error == WSAEHOSTUNREACH) {
             PrintError("Network/host unreachable during send (error: %d)", error);
             return -3;
-        }
-        else {
+        } else {
             PrintError("send() failed with error: %d", error);
             return -1;
         }
     }
-    
+
     if (bytesSent == 0) {
         return -2;
     }
-    
+
     return bytesSent;
 }
 
@@ -61,33 +57,29 @@ int SafeReceive(SOCKET socket, char* buffer, int length) {
     }
 
     int bytesReceived = recv(socket, buffer, length, 0);
-    
+
     if (bytesReceived == SOCKET_ERROR) {
         int error = WSAGetLastError();
-        
+
         if (error == WSAEWOULDBLOCK) {
             return 0;
-        }
-        else if (error == WSANOTINITIALISED) {
+        } else if (error == WSANOTINITIALISED) {
             return -2;
-        }
-        else if (error == WSAECONNRESET || error == WSAECONNABORTED) {
+        } else if (error == WSAECONNRESET || error == WSAECONNABORTED) {
             return -2;
-        }
-        else if (error == WSAENETUNREACH || error == WSAEHOSTUNREACH) {
+        } else if (error == WSAENETUNREACH || error == WSAEHOSTUNREACH) {
             PrintError("Network/host unreachable during receive (error: %d)", error);
             return -3;
-        }
-        else {
+        } else {
             PrintError("recv() failed with error: %d", error);
             return -1;
         }
     }
-    
+
     if (bytesReceived == 0) {
         return -2;
     }
-    
+
     return bytesReceived;
 }
 
@@ -95,18 +87,17 @@ int SafeCloseSocket(SOCKET* socket) {
     if (!socket || *socket == INVALID_SOCKET) {
         return 0;
     }
-    
+
     if (shutdown(*socket, SD_BOTH) == SOCKET_ERROR) {
         int error = WSAGetLastError();
-        if (error != WSAENOTCONN && error != WSAENOTSOCK && error != WSANOTINITIALISED) { 
+        if (error != WSAENOTCONN && error != WSAENOTSOCK && error != WSANOTINITIALISED) {
             PrintWarning("Socket shutdown failed: %d", error);
         }
     }
-    
+
     int result = closesocket(*socket);
-    SOCKET oldSocket = *socket;
     *socket = INVALID_SOCKET;
-    
+
     if (result == SOCKET_ERROR) {
         int error = WSAGetLastError();
         if (error != WSAENOTSOCK && error != WSANOTINITIALISED) {
@@ -114,7 +105,7 @@ int SafeCloseSocket(SOCKET* socket) {
             return -1;
         }
     }
-    
+
     return 0;
 }
 
@@ -127,27 +118,24 @@ int SendBuffer(SOCKET socket, const char* buffer, int length) {
     int totalSent = 0;
     int retries = 0;
     const int MAX_RETRIES = 5000;
-    
+
     while (totalSent < length && retries < MAX_RETRIES) {
         int bytesSent = SafeSend(socket, buffer + totalSent, length - totalSent);
-        
+
         if (bytesSent > 0) {
             totalSent += bytesSent;
             retries = 0;
-        }
-        else if (bytesSent == 0) {
+        } else if (bytesSent == 0) {
             retries++;
             Sleep(NETWORK_POLLING_DELAY);
-        }
-        else if (bytesSent == -2 || bytesSent == -3) {
+        } else if (bytesSent == -2 || bytesSent == -3) {
             return bytesSent;
-        }
-        else {
+        } else {
             PrintError("SendBuffer: Send operation failed with error code %d", bytesSent);
             return -1;
         }
     }
-    
+
     if (totalSent < length) {
         PrintError("SendBuffer: Failed to send complete message after %d retries (%d of %d bytes)", retries, totalSent, length);
         return -1;
@@ -165,32 +153,29 @@ int ReceiveBuffer(SOCKET socket, char* buffer, int length) {
     int totalReceived = 0;
     int retries = 0;
     const int MAX_RETRIES = 5000;
-    
+
     while (totalReceived < length && retries < MAX_RETRIES) {
         int bytesReceived = SafeReceive(socket, buffer + totalReceived, length - totalReceived);
-        
+
         if (bytesReceived > 0) {
             totalReceived += bytesReceived;
             retries = 0;
-        }
-        else if (bytesReceived == 0) {
+        } else if (bytesReceived == 0) {
             retries++;
             Sleep(NETWORK_POLLING_DELAY);
-        }
-        else if (bytesReceived == -2 || bytesReceived == -3) {
+        } else if (bytesReceived == -2 || bytesReceived == -3) {
             return bytesReceived;
-        }
-        else {
+        } else {
             PrintError("ReceiveBuffer: Receive operation failed with error code %d", bytesReceived);
             return -1;
         }
     }
-    
+
     if (totalReceived < length) {
         PrintError("ReceiveBuffer: Failed to receive complete message after %d retries (%d of %d bytes)", retries, totalReceived, length);
         return -1;
     }
-    
+
     return 0;
 }
 
@@ -216,7 +201,7 @@ int SafeConnect(SOCKET socket, const struct sockaddr* addr, int addrlen, int tim
         PrintError("Invalid parameters for SafeConnect");
         return -1;
     }
-    
+
     int result = connect(socket, addr, addrlen);
     if (result == SOCKET_ERROR) {
         int errorCode = WSAGetLastError();
@@ -225,10 +210,10 @@ int SafeConnect(SOCKET socket, const struct sockaddr* addr, int addrlen, int tim
             struct timeval timeout;
             timeout.tv_sec = timeoutSeconds;
             timeout.tv_usec = 0;
-            
+
             FD_ZERO(&writeSet);
             FD_SET(socket, &writeSet);
-            
+
             result = select(0, NULL, &writeSet, NULL, &timeout);
             if (result == SOCKET_ERROR) {
                 int selectError = WSAGetLastError();
@@ -238,7 +223,7 @@ int SafeConnect(SOCKET socket, const struct sockaddr* addr, int addrlen, int tim
                 return -1;
             } else if (result == 0) {
                 PrintError("Connection attempt timed out");
-                return -2;  
+                return -2;
             } else {
                 int sockError = 0;
                 int sockErrorLen = sizeof(sockError);
@@ -249,7 +234,7 @@ int SafeConnect(SOCKET socket, const struct sockaddr* addr, int addrlen, int tim
                     }
                     return -1;
                 }
-                
+
                 if (sockError != 0) {
                     PrintError("Connection failed with error: %d", sockError);
                     return -1;
@@ -260,7 +245,7 @@ int SafeConnect(SOCKET socket, const struct sockaddr* addr, int addrlen, int tim
             return -1;
         }
     }
-    
+
     return 0;
 }
 
@@ -293,20 +278,20 @@ int IsSocketReadyToRead(SOCKET socket, int timeoutMs) {
 
     fd_set readfds;
     struct timeval timeout;
-    
+
     FD_ZERO(&readfds);
     FD_SET(socket, &readfds);
-    
+
     timeout.tv_sec = timeoutMs / 1000;
     timeout.tv_usec = (timeoutMs % 1000) * 1000;
-    
+
     int result = select(0, &readfds, NULL, NULL, &timeout);
     if (result == SOCKET_ERROR) {
         int error = WSAGetLastError();
         PrintWarning("select() failed with error: %d", error);
         return -1;
     }
-    
+
     return (result > 0 && FD_ISSET(socket, &readfds)) ? 1 : 0;
 }
 
@@ -318,60 +303,19 @@ int IsSocketReadyToWrite(SOCKET socket, int timeoutMs) {
 
     fd_set writefds;
     struct timeval timeout;
-    
+
     FD_ZERO(&writefds);
     FD_SET(socket, &writefds);
-    
+
     timeout.tv_sec = timeoutMs / 1000;
     timeout.tv_usec = (timeoutMs % 1000) * 1000;
-    
+
     int result = select(0, NULL, &writefds, NULL, &timeout);
     if (result == SOCKET_ERROR) {
         int error = WSAGetLastError();
         PrintWarning("select() failed with error: %d", error);
         return -1;
     }
-    
+
     return (result > 0 && FD_ISSET(socket, &writefds)) ? 1 : 0;
 }
-
-int WaitForMultipleSockets(SOCKET* sockets, int socketCount, int timeoutMs) {
-    if (sockets == NULL || socketCount <= 0 || socketCount > FD_SETSIZE) {
-        PrintError("Invalid parameters for WaitForMultipleSockets");
-        return -1;
-    }
-
-    fd_set readfds;
-    struct timeval timeout;
-    
-    FD_ZERO(&readfds);
-    for (int i = 0; i < socketCount; i++) {
-        if (sockets[i] != INVALID_SOCKET) {
-            FD_SET(sockets[i], &readfds);
-        }
-    }
-    
-    timeout.tv_sec = timeoutMs / 1000;
-    timeout.tv_usec = (timeoutMs % 1000) * 1000;
-    
-    int result = select(0, &readfds, NULL, NULL, &timeout);
-    if (result == SOCKET_ERROR) {
-        int error = WSAGetLastError();
-        PrintWarning("select() failed with error: %d", error);
-        return -1;
-    }
-    
-    if (result == 0) {
-        return 0;
-    }
-    
-    for (int i = 0; i < socketCount; i++) {
-        if (sockets[i] != INVALID_SOCKET && FD_ISSET(sockets[i], &readfds)) {
-            return i + 1; 
-        }
-    }
-    
-    return 0;
-}
-
-

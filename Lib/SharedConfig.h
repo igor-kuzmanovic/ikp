@@ -30,7 +30,7 @@
 #define RECEIVER_POLLING_DELAY                  10
 #define PEER_CONNECTION_RETRY_DELAY             100
 #define QUEUE_RETRY_DELAY                       100
-#define NETWORK_POLLING_DELAY                   10
+#define NETWORK_POLLING_DELAY                   100
 
 #define DATA_EXPORT_BUCKET_YIELD_SLEEP_TIME     10
 
