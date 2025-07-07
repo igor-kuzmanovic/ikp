@@ -40,10 +40,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		Screenshots\6-before-end-heap.png = Screenshots\6-before-end-heap.png
 		Screenshots\6-before-end-pm.png = Screenshots\6-before-end-pm.png
 		DESIGN.png = DESIGN.png
-		DOCUMENTATION.md = DOCUMENTATION.md
+		IKP Documentation.docx = IKP Documentation.docx
+		IKP Documentation.pdf = IKP Documentation.pdf
 		IKP Projekat G24.pdf = IKP Projekat G24.pdf
-		PROJECT.md = PROJECT.md
-		PROTOCOL.md = PROTOCOL.md
 		README.md = README.md
 	EndProjectSection
 EndProject
