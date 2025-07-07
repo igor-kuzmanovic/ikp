@@ -33,5 +33,3 @@ int GetWorkerById(WorkerList* list, int workerId, WorkerNode* worker);
 int SendWorkerRegistryEntries(SOCKET socket, WorkerList* list);
 
 int BroadcastNewWorkerJoined(WorkerList* list, int newWorkerId);
-
-

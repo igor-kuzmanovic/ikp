@@ -14,7 +14,7 @@ static unsigned int HashFunction(const char* value) {
         hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
     }
 
-    hash = hash % HASH_TABLE_BUCKET_COUNT;
+    hash = hash % WORKER_HASH_TABLE_BUCKET_COUNT;
 
     return hash;
 }
@@ -63,7 +63,7 @@ int InitializeHashTable(HashTable** table) {
         return -1;
     }
 
-    newTable->bucketCount = HASH_TABLE_BUCKET_COUNT;
+    newTable->bucketCount = WORKER_HASH_TABLE_BUCKET_COUNT;
 
     newTable->buckets = (DataNode**)calloc(newTable->bucketCount, sizeof(DataNode*));
     if (newTable->buckets == NULL) {
@@ -567,7 +567,7 @@ int ExportHashTableToPeer(const HashTable* table, PeerManager* peerManager, uint
         LeaveCriticalSection(&table->locks[i]);
         
         if (i % 10 == 0 && i > 0) {
-            Sleep(DATA_EXPORT_BUCKET_YIELD_SLEEP_TIME);
+            Sleep(WORKER_DATA_EXPORT_BUCKET_YIELD_SLEEP_TIME);
         }
     }
 

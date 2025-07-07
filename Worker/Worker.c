@@ -2,7 +2,6 @@
 #include "ExportThread.h"
 
 int main() {
-
     int iResult;
 
     int workerId = GetCurrentProcessId();

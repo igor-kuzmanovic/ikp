@@ -30,7 +30,7 @@ DWORD WINAPI SenderThread(LPVOID lpParam) {
         }
 
         if (GetPauseSender(context)) {
-            Sleep(SERVER_FULL_SLEEP_TIME * serverFullSleepTimeMultiplier);
+            Sleep(CLIENT_SERVER_FULL_SLEEP_TIME * serverFullSleepTimeMultiplier);
             serverFullSleepTimeMultiplier *= 2;
             continue;
         } else if (serverFullSleepTimeMultiplier != 1) {
@@ -39,7 +39,7 @@ DWORD WINAPI SenderThread(LPVOID lpParam) {
 
         if (verificationPhase == 0 && messageCounter >= context->messageCount) {
             PrintInfo("PUT phase complete. Waiting briefly before starting GET verification phase...");
-            Sleep(PUT_TO_GET_TRANSITION_DELAY);
+            Sleep(CLIENT_PUT_TO_GET_TRANSITION_DELAY);
             verificationPhase = 1;
             continue;
         }
@@ -79,14 +79,14 @@ DWORD WINAPI SenderThread(LPVOID lpParam) {
             keyLength = GenerateKey(key, localPort, processId, messageCounter + 1);
             if (keyLength <= 0 || keyLength > MAX_KEY_SIZE) {
                 PrintError("Failed to generate a valid key, length: %d.", keyLength);
-                Sleep(MESSAGE_SEND_WAIT_TIME);
+                Sleep(CLIENT_MESSAGE_SEND_WAIT_TIME);
                 continue;
             }
 
             valueLength = GenerateRandomValue(value);
             if (valueLength <= 0 || valueLength > MAX_VALUE_SIZE) {
                 PrintError("Failed to generate a valid value, length: %d.", valueLength);
-                Sleep(MESSAGE_SEND_WAIT_TIME);
+                Sleep(CLIENT_MESSAGE_SEND_WAIT_TIME);
                 continue;
             }
 
@@ -105,7 +105,7 @@ DWORD WINAPI SenderThread(LPVOID lpParam) {
             }
         }
 
-        Sleep(MESSAGE_SEND_WAIT_TIME);
+        Sleep(CLIENT_MESSAGE_SEND_WAIT_TIME);
     }
 
     return TRUE;

@@ -22,13 +22,13 @@ int main(int argc, char* argv[]) {
         return EXIT_FAILURE;
     }
 
-    context.messageCount = MESSAGE_COUNT;
+    context.messageCount = CLIENT_MESSAGE_COUNT;
     if (argc > 1) {
         int count = atoi(argv[1]);
         if (count > 0) {
             context.messageCount = count;
         } else {
-            PrintWarning("Invalid message count '%s'. Using default value (%d).", argv[1], MESSAGE_COUNT);
+            PrintWarning("Invalid message count '%s'. Using default value (%d).", argv[1], CLIENT_MESSAGE_COUNT);
         }
     }
 

@@ -52,7 +52,7 @@ int DestroyPeerManager(PeerManager* peerManager) {
     return 0;
 }
 
-int BroadcastDataToPeers(PeerManager* peerManager, const char* key, const char* value) {
+int BroadcastData(PeerManager* peerManager, const char* key, const char* value) {
     if (!peerManager || !key || !value) {
         return -1;
     }
@@ -85,7 +85,7 @@ int BroadcastDataToPeers(PeerManager* peerManager, const char* key, const char* 
     return successCount;
 }
 
-int AddSinglePeerWorker(PeerManager* peerManager, int workerId, const char* address, int port) {
+int AddPeer(PeerManager* peerManager, int workerId, const char* address, int port) {
     if (peerManager == NULL || address == NULL) {
         return -1;
     }

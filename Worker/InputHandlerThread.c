@@ -27,10 +27,10 @@ DWORD WINAPI InputHandlerThread(LPVOID lpParam) {
                 GetHashTableStats(context->hashTable, &totalSize, &totalItems);
                 uint32_t totalSizeKB = totalSize / 1024;
                 uint32_t totalSizeMB = totalSizeKB / 1024;
-                double avgItemsPerBucket = (double)totalItems / HASH_TABLE_BUCKET_COUNT;
+                double avgItemsPerBucket = (double)totalItems / WORKER_HASH_TABLE_BUCKET_COUNT;
                 PrintInfo("Total memory usage: %u bytes (%u KB, %u MB)", totalSize, totalSizeKB, totalSizeMB);
                 PrintInfo("Total items: %d, Buckets: %d, Avg items/bucket: %.2f", 
-                         totalItems, HASH_TABLE_BUCKET_COUNT, avgItemsPerBucket);
+                         totalItems, WORKER_HASH_TABLE_BUCKET_COUNT, avgItemsPerBucket);
                 PrintInfo("========================");
             }
         }

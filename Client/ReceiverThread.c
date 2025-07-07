@@ -19,6 +19,11 @@ DWORD WINAPI ReceiverThread(LPVOID lpParam) {
             break;
         }
 
+        if (context->connectSocket == INVALID_SOCKET) {
+            SetFinishSignal(context);
+            break;
+        }
+
         recvResult = ProtocolReceive(context->connectSocket, &messageType, buffer, MAX_MESSAGE_SIZE, &actualSize);
         if (recvResult == 0) {
             PrintDebug("Message received: %s (%d bytes)", GetMessageTypeName(messageType), actualSize);
@@ -70,7 +75,7 @@ DWORD WINAPI ReceiverThread(LPVOID lpParam) {
                     if (errorCode == ERR_SERVER_BUSY) {
                         PrintDebug("Server is busy, pausing the sender.");
                         SetPauseSender(context, true);
-                        Sleep(SERVER_FULL_SLEEP_TIME * serverFullSleepTimeMultiplier);
+                        Sleep(CLIENT_SERVER_FULL_SLEEP_TIME * serverFullSleepTimeMultiplier);
                         serverFullSleepTimeMultiplier *= 2;
                         SetPauseSender(context, false);
                         PrintDebug("Assuming the server is ready to receive new requests, resuming the sender.");

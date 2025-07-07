@@ -65,8 +65,10 @@ int ContextDestroy(Context* context) {
 int SetFinishSignal(Context* context) {
     EnterCriticalSection(&context->lock);
 
-    ReleaseSemaphore(context->finishSignal, THREAD_COUNT, NULL);
-    context->finishFlag = true;
+    if (context->finishFlag != true) {
+        context->finishFlag = true;
+        ReleaseSemaphore(context->finishSignal, THREAD_COUNT, NULL);
+    }
 
     LeaveCriticalSection(&context->lock);
 

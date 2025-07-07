@@ -93,7 +93,7 @@ DWORD WINAPI WorkerClientRequestDispatcherThread(LPVOID lpParam) {
                         memset(worker, 0, sizeof(WorkerNode));
                         hasWorker = false;
 
-                        Sleep(QUEUE_RETRY_DELAY);
+                        Sleep(LB_QUEUE_RETRY_DELAY);
                     } else {
                         PrintError("Failed to send store request to worker %d (error: %d)", worker->workerId, sendResult);
                         ReturnClientRequestQueue(context->clientRequestQueue, request);
@@ -133,7 +133,7 @@ DWORD WINAPI WorkerClientRequestDispatcherThread(LPVOID lpParam) {
                         memset(worker, 0, sizeof(WorkerNode));
                         hasWorker = false;
 
-                        Sleep(QUEUE_RETRY_DELAY);
+                        Sleep(LB_QUEUE_RETRY_DELAY);
                     } else {
                         PrintError("Failed to send retrieve request to worker %d (error: %d)", worker->workerId, sendResult);
                         ReturnClientRequestQueue(context->clientRequestQueue, request);

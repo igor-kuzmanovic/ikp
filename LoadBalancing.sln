@@ -23,7 +23,27 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{54BA14FB-2D5F-42C8-9B09-579EE095932E}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
+		Screenshots\1-before-start-heap.png = Screenshots\1-before-start-heap.png
+		Screenshots\1-before-start-pm.png = Screenshots\1-before-start-pm.png
+		Screenshots\2-after-start-allocations.png = Screenshots\2-after-start-allocations.png
+		Screenshots\2-after-start-heap.png = Screenshots\2-after-start-heap.png
+		Screenshots\2-after-start-pm.png = Screenshots\2-after-start-pm.png
+		Screenshots\3-workers-connect-allocations.png = Screenshots\3-workers-connect-allocations.png
+		Screenshots\3-workers-connect-heap.png = Screenshots\3-workers-connect-heap.png
+		Screenshots\3-workers-connect-pm.png = Screenshots\3-workers-connect-pm.png
+		Screenshots\4-during-stress-allocations.png = Screenshots\4-during-stress-allocations.png
+		Screenshots\4-during-stress-heap.png = Screenshots\4-during-stress-heap.png
+		Screenshots\4-during-stress-pm.png = Screenshots\4-during-stress-pm.png
+		Screenshots\5-passive-allocations.png = Screenshots\5-passive-allocations.png
+		Screenshots\5-passive-heap.png = Screenshots\5-passive-heap.png
+		Screenshots\6-before-end-allocations.png = Screenshots\6-before-end-allocations.png
+		Screenshots\6-before-end-heap.png = Screenshots\6-before-end-heap.png
+		Screenshots\6-before-end-pm.png = Screenshots\6-before-end-pm.png
+		DESIGN.png = DESIGN.png
+		DOCUMENTATION.md = DOCUMENTATION.md
 		IKP Projekat G24.pdf = IKP Projekat G24.pdf
+		PROJECT.md = PROJECT.md
+		PROTOCOL.md = PROTOCOL.md
 		README.md = README.md
 	EndProjectSection
 EndProject

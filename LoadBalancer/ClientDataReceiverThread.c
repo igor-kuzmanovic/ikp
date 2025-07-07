@@ -97,8 +97,6 @@ DWORD WINAPI ClientDataReceiverThread(LPVOID lpParam) {
             }
             break;
         }
-
-        Sleep(RECEIVER_POLLING_DELAY);
     }
 
     if (clientSocket != INVALID_SOCKET) {

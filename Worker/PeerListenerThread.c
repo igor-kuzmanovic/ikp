@@ -115,7 +115,7 @@ DWORD WINAPI PeerListenerThread(LPVOID param) {
 
                     case MSG_PEER_NOTIFY: {
                         if (ReceivePeerNotify(buffer, actualSize, key, value) == 0) {
-                            PrintInfo("Received peer data: '%s':'%s'", key, value);
+                            PrintDebug("Received peer data: '%s':'%s'", key, value);
 
                             if (!HasHashTable(context->hashTable, key)) {
                                 if (SetHashTable(context->hashTable, key, value) == 1) {
@@ -151,7 +151,7 @@ DWORD WINAPI PeerListenerThread(LPVOID param) {
             SafeCloseSocket(&clientSocket);
         }
 
-        Sleep(PEER_CONNECTION_RETRY_DELAY);
+        Sleep(WORKER_PEER_CONNECTION_RETRY_DELAY);
     }
 
     SafeCloseSocket(&peerManager->peerListenSocket);

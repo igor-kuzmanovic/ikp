@@ -55,9 +55,9 @@ DWORD WINAPI ReceiverThread(LPVOID lpParam) {
 
                         if (SetHashTable(context->hashTable, key, value) == 1) {
                             if (context->peerManager != NULL) {
-                                broadcastCount = BroadcastDataToPeers(context->peerManager, key, value);
+                                broadcastCount = BroadcastData(context->peerManager, key, value);
                                 if (broadcastCount > 0) {
-                                    PrintInfo("Notified %d peer workers about new data", broadcastCount);
+                                    PrintDebug("Notified %d peer workers about new data", broadcastCount);
                                 }
                             }
 
@@ -123,25 +123,6 @@ DWORD WINAPI ReceiverThread(LPVOID lpParam) {
                     SetFinishSignal(context);
                     break;
 
-                case MSG_PEER_NOTIFY: {
-                    if (ReceivePeerNotify(buffer, actualSize, key, value) == 0) {
-                        PrintInfo("Received peer data: '%s':'%s'", key, value);
-
-                        if (!HasHashTable(context->hashTable, key)) {
-                            if (SetHashTable(context->hashTable, key, value) == 1) {
-                                PrintDebug("Successfully stored peer data: %s:%s", key, value);
-                            } else {
-                                PrintError("Failed to store peer data: %s:%s", key, value);
-                            }
-                        } else {
-                            PrintDebug("Key '%s' already exists, ignoring peer data", key);
-                        }
-                    } else {
-                        PrintError("Failed to parse peer notify message");
-                    }
-                    break;
-                }
-
                 case MSG_WORKER_REGISTRY_START: {
 
                     if (ReceiveWorkerRegistryStart(buffer, actualSize, &totalWorkers) == 0) {
@@ -155,7 +136,7 @@ DWORD WINAPI ReceiverThread(LPVOID lpParam) {
                 case MSG_WORKER_ENTRY: {
                     if (ReceiveWorkerEntry(buffer, actualSize, &workerId, address, &port, &shouldExportData) == 0) {
                         if (context->peerManager != NULL) {
-                            AddSinglePeerWorker(context->peerManager, workerId, address, port);
+                            AddPeer(context->peerManager, workerId, address, port);
 
                             if (shouldExportData) {
                                 PrintInfo("LoadBalancer requested data export to worker %u", workerId);
@@ -205,8 +186,6 @@ DWORD WINAPI ReceiverThread(LPVOID lpParam) {
                 break;
             }
         }
-
-        Sleep(RECEIVER_POLLING_DELAY);
     }
 
     return TRUE;
