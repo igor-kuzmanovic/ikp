@@ -107,63 +107,63 @@ All messages start with a header:
 
 ### Step 1: Just the Load Balancer is started and waiting for a key press
 
-Heap:
-![alt text](./Screenshots/1-before-start-heap.png)
+Heap:  
+![alt text](./Screenshots/1-before-start-heap.png)  
 
 Process Monitor:
-![alt text](./Screenshots/1-before-start-pm.png)
+![alt text](./Screenshots/1-before-start-pm.png)  
 
 ### Step 2: After the memory allocations are done and threads are started
 
-Heap:
-![alt text](./Screenshots/2-after-start-heap.png)
+Heap:  
+![alt text](./Screenshots/2-after-start-heap.png)  
 
-Allocations:
-![alt text](./Screenshots/2-after-start-allocations.png)
+Allocations:  
+![alt text](./Screenshots/2-after-start-allocations.png)  
 
-Process Monitor:
-![alt text](./Screenshots/2-after-start-pm.png)]
+Process Monitor:  
+![alt text](./Screenshots/2-after-start-pm.png)  
 
 ### Step 3: 2 workers are started and the Load Balancer is waiting for clients
 
-Heap:
-![alt text](./Screenshots/3-workers-connect-heap.png)
+Heap:  
+![alt text](./Screenshots/3-workers-connect-heap.png)  
 
-Allocations:
-![alt text](./Screenshots/3-workers-connect-allocations.png)
+Allocations:  
+![alt text](./Screenshots/3-workers-connect-allocations.png)  
 
-Process Monitor:
-![alt text](./Screenshots/3-workers-connect-pm.png)
+Process Monitor:  
+![alt text](./Screenshots/3-workers-connect-pm.png)  
 
 ### Step 4: 3 clients are connected and the Load Balancer is under stress distributing requests
 
-Heap:
-![alt text](./Screenshots/4-during-stress-heap.png)
+Heap:  
+![alt text](./Screenshots/4-during-stress-heap.png)  
 
-Allocations:
-![alt text](./Screenshots/4-during-stress-allocations.png)
+Allocations:  
+![alt text](./Screenshots/4-during-stress-allocations.png)  
 
-Process Monitor:
-![alt text](./Screenshots/4-during-stress-pm.png)
+Process Monitor:  
+![alt text](./Screenshots/4-during-stress-pm.png)  
 
 ### Step 5: The clients are disconnected and the Load Balancer is passive
 
-Heap:
-![alt text](./Screenshots/5-passive-heap.png)
+Heap:  
+![alt text](./Screenshots/5-passive-heap.png)  
 
-Allocations:
-![alt text](./Screenshots/5-passive-allocations.png)
+Allocations:  
+![alt text](./Screenshots/5-passive-allocations.png)  
 
 ### Step 6: All workers are disconnected and the Load Balancer is stopped, memory deallocated and threads finished, waiting for a key press just before the final exit
 
-Heap:
-![alt text](./Screenshots/6-before-end-heap.png)
+Heap:  
+![alt text](./Screenshots/6-before-end-heap.png)  
 
-Allocations:
-![alt text](./Screenshots/6-before-end-allocations.png)
+Allocations:  
+![alt text](./Screenshots/6-before-end-allocations.png)  
 
-Process Monitor:
-![alt text](./Screenshots/6-before-end-pm.png)
+Process Monitor:  
+![alt text](./Screenshots/6-before-end-pm.png)  
 
 
 ## Potential improvements
