@@ -24,7 +24,7 @@ DWORD WINAPI ReceiverThread(LPVOID lpParam) {
             break;
         }
 
-        if (context->testData.getSuccessCount >= context->messageCount) {
+        if (context->testData.getSuccessCount + context->testData.getFailureCount >= context->messageCount) {
             PrintInfo("All responses received.");
             SetFinishSignal(context);
             break;
@@ -43,10 +43,14 @@ DWORD WINAPI ReceiverThread(LPVOID lpParam) {
                         context->testData.putSuccessCount++;
                     } else {
                         PrintWarning("PUT request for key '%s' failed: %s", key, GetErrorCodeName(errorCode));
+                        context->testData.putFailureCount++;
                     }
                     LeaveCriticalSection(&context->testData.lock);
                 } else {
                     PrintError("Failed to parse PUT response message");
+                    EnterCriticalSection(&context->testData.lock);
+                    context->testData.putFailureCount++;
+                    LeaveCriticalSection(&context->testData.lock);
                 }
                 break;
             }
@@ -59,10 +63,14 @@ DWORD WINAPI ReceiverThread(LPVOID lpParam) {
                         context->testData.getSuccessCount++;
                     } else {
                         PrintWarning("GET request for key '%s' failed: %s", key, GetErrorCodeName(errorCode));
+                        context->testData.getFailureCount++;
                     }
                     LeaveCriticalSection(&context->testData.lock);
                 } else {
                     PrintError("Failed to parse GET response message");
+                    EnterCriticalSection(&context->testData.lock);
+                    context->testData.getFailureCount++;
+                    LeaveCriticalSection(&context->testData.lock);
                 }
                 break;
             }

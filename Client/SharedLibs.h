@@ -30,6 +30,8 @@
 typedef struct {
     int putSuccessCount;
     int getSuccessCount;
+    int putFailureCount;
+    int getFailureCount;
     int putCount;
     int getCount;
     int verificationComplete;

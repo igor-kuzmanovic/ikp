@@ -15,6 +15,8 @@ int ContextInitialize(Context* context) {
     InitializeCriticalSection(&context->testData.lock);
     context->testData.putSuccessCount = 0;
     context->testData.getSuccessCount = 0;
+    context->testData.putFailureCount = 0;
+    context->testData.getFailureCount = 0;
     context->testData.putCount = 0;
     context->testData.getCount = 0;
     context->testData.verificationComplete = 0;
