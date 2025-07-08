@@ -44,8 +44,6 @@ typedef struct {
     bool pauseSender;
     TestVerification testData;
     int messageCount;
-    HANDLE getAllRequestsSentSignal;
-    HANDLE verificationCompleteSignal;
 } Context;
 
 int GenerateAndSendClientMessage(SOCKET clientSocket, const int id);

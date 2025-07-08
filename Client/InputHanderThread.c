@@ -8,6 +8,10 @@ DWORD WINAPI InputHandlerThread(LPVOID lpParam) {
     PrintInfo("Press 'q' to stop the client.");
 
     while (true) {
+        if (WaitForSingleObject(context->finishSignal, 0) == WAIT_OBJECT_0) {
+            break;
+        }
+
         if (_kbhit()) {
             ch = _getch();
 

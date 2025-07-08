@@ -1,9 +1,6 @@
 ﻿#include "LoadBalancer.h"
 
 int main(void) {
-    PrintInfo("Press any key to start the server.");
-    _getch();
-
     int iResult;
 
     HANDLE inputHandlerThread = NULL;

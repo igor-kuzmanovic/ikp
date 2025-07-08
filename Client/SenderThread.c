@@ -44,18 +44,12 @@ DWORD WINAPI SenderThread(LPVOID lpParam) {
             continue;
         }
 
+        if (verificationPhase == 1 && verificationCounter >= context->messageCount) {
+            PrintInfo("GET verification phase complete. All GET requests sent.");
+            break;
+        }
+
         if (verificationPhase == 1) {
-            if (verificationCounter >= context->messageCount) {
-                PrintInfo("GET verification phase complete. All GET requests sent.");
-                ReleaseSemaphore(context->getAllRequestsSentSignal, 1, NULL);
-
-                PrintInfo("Waiting for all responses to be received...");
-                WaitForSingleObject(context->verificationCompleteSignal, INFINITE);
-
-                PrintVerificationSummary(context);
-                break;
-            }
-
             keyLength = GenerateKey(key, localPort, processId, verificationCounter + 1);
             if (keyLength > 0 && keyLength <= MAX_KEY_SIZE) {
                 EnterCriticalSection(&context->testData.lock);

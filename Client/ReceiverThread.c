@@ -24,6 +24,12 @@ DWORD WINAPI ReceiverThread(LPVOID lpParam) {
             break;
         }
 
+        if (context->testData.getSuccessCount >= context->messageCount) {
+            PrintInfo("All responses received.");
+            SetFinishSignal(context);
+            break;
+        }
+
         recvResult = ProtocolReceive(context->connectSocket, &messageType, buffer, MAX_MESSAGE_SIZE, &actualSize);
         if (recvResult == 0) {
             PrintDebug("Message received: %s (%d bytes)", GetMessageTypeName(messageType), actualSize);
@@ -53,9 +59,6 @@ DWORD WINAPI ReceiverThread(LPVOID lpParam) {
                         context->testData.getSuccessCount++;
                     } else {
                         PrintWarning("GET request for key '%s' failed: %s", key, GetErrorCodeName(errorCode));
-                    }
-                    if (context->testData.getCount >= context->messageCount) {
-                        ReleaseSemaphore(context->verificationCompleteSignal, 1, NULL);
                     }
                     LeaveCriticalSection(&context->testData.lock);
                 } else {

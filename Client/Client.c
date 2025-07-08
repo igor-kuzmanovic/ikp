@@ -88,6 +88,8 @@ int main(int argc, char* argv[]) {
 
     WaitForMultipleObjects(THREAD_COUNT, threads, TRUE, INFINITE);
 
+    PrintVerificationSummary(&context);
+
     CleanupFull(&context, threads, THREAD_COUNT);
 
     PrintInfo("Press any key to exit.");

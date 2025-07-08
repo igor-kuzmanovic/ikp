@@ -7,6 +7,10 @@ DWORD WINAPI InputHandlerThread(LPVOID lpParam) {
     PrintInfo("Press 'q' to stop the worker, 's' to show hashtable status.");
 
     while (true) {
+        if (WaitForSingleObject(context->finishSignal, 0) == WAIT_OBJECT_0) {
+            break;
+        }
+
         if (_kbhit()) { 
             char ch = _getch();
             

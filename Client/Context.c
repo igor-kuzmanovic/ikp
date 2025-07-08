@@ -8,21 +8,6 @@ int ContextInitialize(Context* context) {
         return GetLastError();
     }
 
-    context->getAllRequestsSentSignal = CreateSemaphore(NULL, 0, 1, NULL);
-    if (context->getAllRequestsSentSignal == NULL) {
-        PrintCritical("Failed to create getAllRequestsSentSignal.");
-        CloseHandle(context->finishSignal);
-        return GetLastError();
-    }
-
-    context->verificationCompleteSignal = CreateSemaphore(NULL, 0, 1, NULL);
-    if (context->verificationCompleteSignal == NULL) {
-        PrintCritical("Failed to create verificationCompleteSignal.");
-        CloseHandle(context->finishSignal);
-        CloseHandle(context->getAllRequestsSentSignal);
-        return GetLastError();
-    }
-
     context->finishFlag = false;
     context->connectSocket = INVALID_SOCKET;
     context->pauseSender = false;
@@ -44,14 +29,6 @@ int ContextDestroy(Context* context) {
     if (context->finishSignal != NULL) {
         CloseHandle(context->finishSignal);
         context->finishSignal = NULL;
-    }
-    if (context->getAllRequestsSentSignal != NULL) {
-        CloseHandle(context->getAllRequestsSentSignal);
-        context->getAllRequestsSentSignal = NULL;
-    }
-    if (context->verificationCompleteSignal != NULL) {
-        CloseHandle(context->verificationCompleteSignal);
-        context->verificationCompleteSignal = NULL;
     }
     context->finishFlag = false;
     DeleteCriticalSection(&context->testData.lock);
