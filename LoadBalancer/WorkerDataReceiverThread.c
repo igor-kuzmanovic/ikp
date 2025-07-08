@@ -143,7 +143,7 @@ DWORD WINAPI WorkerDataReceiverThread(LPVOID lpParam) {
             } else {
                 PrintError("'ProtocolReceive' failed with error: %d. Closing connection with worker %d.", recvResult, workerId);
             }
-            SetWorkerDisconnected(context->workerList, workerId);
+            RemoveWorker(context->workerList, workerId);
             break;
         }
     }

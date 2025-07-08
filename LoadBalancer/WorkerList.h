@@ -18,8 +18,6 @@ int GetWorkerCount(WorkerList* list);
 
 int BroadcastWorkerRegistryUpdate(WorkerList* list);
 
-int SetWorkerDisconnected(WorkerList* list, int workerId);
-
 int SetWorkerReady(WorkerList* list, int workerId);
 
 int SetWorkerNotReady(WorkerList* list, int workerId);

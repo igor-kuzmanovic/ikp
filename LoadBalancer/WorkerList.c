@@ -375,50 +375,6 @@ int BroadcastWorkerRegistryUpdate(WorkerList* list) {
     return successCount;
 }
 
-int SetWorkerDisconnected(WorkerList* list, int workerId) {
-    if (!list) {
-        PrintError("Invalid worker list");
-        return -1;
-    }
-
-    EnterCriticalSection(&list->lock);
-
-    WorkerNode* current = list->head;
-    int result = -1;
-
-    if (current != NULL) {
-        do {
-            if (current->workerId == workerId) {
-                if (current->isConnected) {
-                    PrintInfo("Marking worker %d as disconnected due to network error", workerId);
-                    current->isConnected = 0;
-                    
-                    if (current->workerSocket != INVALID_SOCKET) {
-                        int closeResult = SafeCloseSocket(&current->workerSocket);
-                        if (closeResult != 0) {
-                            PrintWarning("Failed to close socket for worker %d: error %d", 
-                                        workerId, WSAGetLastError());
-                        }
-                    }
-                    
-                    result = 1;
-                    
-                    LeaveCriticalSection(&list->lock);
-                    BroadcastWorkerRegistryUpdate(list);
-                    EnterCriticalSection(&list->lock);
-                } else {
-                    result = 0;
-                }
-                break;
-            }
-            current = current->next;
-        } while (current != list->head);
-    }
-
-    LeaveCriticalSection(&list->lock);
-    return result;
-}
-
 int SetWorkerReady(WorkerList* list, int workerId) {
     if (!list) {
         PrintError("Invalid worker list");

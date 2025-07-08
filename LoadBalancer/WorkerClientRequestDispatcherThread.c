@@ -82,8 +82,8 @@ DWORD WINAPI WorkerClientRequestDispatcherThread(LPVOID lpParam) {
                         memset(worker, 0, sizeof(WorkerNode));
                         hasWorker = false;
                     } else if (sendResult == -2 || sendResult == -3) {
-                        PrintInfo("Connection to worker %d lost (error: %d), marking worker as disconnected", worker->workerId, sendResult);
-                        SetWorkerDisconnected(context->workerList, worker->workerId);
+                        PrintInfo("Connection to worker %d lost (error: %d), removing worker", worker->workerId, sendResult);
+                        RemoveWorker(context->workerList, worker->workerId);
 
                         ReturnClientRequestQueue(context->clientRequestQueue, request);
 
@@ -122,8 +122,8 @@ DWORD WINAPI WorkerClientRequestDispatcherThread(LPVOID lpParam) {
                         memset(worker, 0, sizeof(WorkerNode));
                         hasWorker = false;
                     } else if (sendResult == -2 || sendResult == -3) {
-                        PrintInfo("Connection to worker %d lost (error: %d), marking worker as disconnected", worker->workerId, sendResult);
-                        SetWorkerDisconnected(context->workerList, worker->workerId);
+                        PrintInfo("Connection to worker %d lost (error: %d), removing worker", worker->workerId, sendResult);
+                        RemoveWorker(context->workerList, worker->workerId);
 
                         ReturnClientRequestQueue(context->clientRequestQueue, request);
 
