@@ -16,11 +16,7 @@ int IterateWorkersOnce(WorkerList* list, WorkerNode** iterator);
 
 int GetWorkerCount(WorkerList* list);
 
-int BroadcastWorkerRegistryUpdate(WorkerList* list);
-
 int SetWorkerReady(WorkerList* list, int workerId);
-
-int SetWorkerNotReady(WorkerList* list, int workerId);
 
 int UpdateWorkerPeerPort(WorkerList* list, int workerId, int peerPort);
 

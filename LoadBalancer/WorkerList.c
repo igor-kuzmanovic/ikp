@@ -312,69 +312,6 @@ int GetWorkerCount(WorkerList* list) {
     return count;
 }
 
-int BroadcastWorkerRegistryUpdate(WorkerList* list) {
-    if (list == NULL) {
-        PrintError("Invalid worker list provided to 'BroadcastWorkerRegistryUpdate'.");
-        return -1;
-    }
-
-    EnterCriticalSection(&list->lock);
-
-    if (list->count == 0) {
-        LeaveCriticalSection(&list->lock);
-        PrintInfo("No workers to broadcast registry update to.");
-        return 0;
-    }
-
-    int workerIds[MAX_WORKERS];
-    char addresses[MAX_WORKERS][256];
-    int ports[MAX_WORKERS];
-    int workerCount = 0;
-    
-    
-    WorkerNode* current = list->head;
-    
-    if (current != NULL) {
-        do {
-            if (workerCount < MAX_WORKERS) {
-                workerIds[workerCount] = current->workerId;
-                strncpy_s(addresses[workerCount], sizeof(addresses[workerCount]), 
-                         current->workerAddress, _TRUNCATE);
-                ports[workerCount] = current->workerPeerPort;
-                workerCount++;
-            }
-            current = current->next;
-        } while (current != list->head && workerCount < MAX_WORKERS);
-    }
-
-    int successCount = 0;
-    current = list->head;
-    
-    if (current != NULL) {
-        do {
-            if (current->isConnected && current->workerSocket != INVALID_SOCKET) {
-                int result = SendWorkerRegistryEntries(current->workerSocket, list);
-                if (result >= 0) {
-                    successCount++;
-                } else if (result == -2 || result == -3) {
-                    PrintInfo("Connection to worker %d lost (error: %d), marking worker as disconnected", current->workerId, result);
-                    current->isConnected = 0;
-                    SafeCloseSocket(&current->workerSocket);
-                } else {
-                    PrintWarning("Failed to send registry update to worker %d (error: %d)", current->workerId, result);
-                }
-            } else {
-            }
-            current = current->next;
-        } while (current != list->head);
-    }
-
-    LeaveCriticalSection(&list->lock);
-
-    PrintInfo("Broadcasted worker registry update to %d/%d workers", successCount, list->count);
-    return successCount;
-}
-
 int SetWorkerReady(WorkerList* list, int workerId) {
     if (!list) {
         PrintError("Invalid worker list");
@@ -392,37 +329,6 @@ int SetWorkerReady(WorkerList* list, int workerId) {
                 if (!current->isReady) {
                     PrintInfo("Marking worker %d as ready", workerId);
                     current->isReady = 1;
-                    result = 1;
-                } else {
-                    result = 0;
-                }
-                break;
-            }
-            current = current->next;
-        } while (current != list->head);
-    }
-
-    LeaveCriticalSection(&list->lock);
-    return result;
-}
-
-int SetWorkerNotReady(WorkerList* list, int workerId) {
-    if (!list) {
-        PrintError("Invalid worker list");
-        return -1;
-    }
-
-    EnterCriticalSection(&list->lock);
-
-    WorkerNode* current = list->head;
-    int result = -1;
-
-    if (current != NULL) {
-        do {
-            if (current->workerId == workerId) {
-                if (current->isReady) {
-                    PrintInfo("Marking worker %d as not ready", workerId);
-                    current->isReady = 0;
                     result = 1;
                 } else {
                     result = 0;
@@ -519,9 +425,10 @@ int SendWorkerRegistryToSingleWorker(WorkerList* list, int targetWorkerId) {
             LeaveCriticalSection(&list->lock);
             return 1;
         } else if (result == -2 || result == -3) {
-            PrintInfo("Connection to worker %d lost (error: %d), marking worker as disconnected", targetWorkerId, result);
+            PrintInfo("Connection to worker %d lost (error: %d), removing worker", targetWorkerId, result);
             targetWorker->isConnected = 0;
             SafeCloseSocket(&targetWorker->workerSocket);
+            RemoveWorker(list, targetWorkerId);
         } else {
             PrintWarning("Failed to send registry update to worker %d (error: %d)", targetWorkerId, result);
         }
