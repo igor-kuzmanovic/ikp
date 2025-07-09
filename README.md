@@ -177,3 +177,6 @@ Process Monitor:
 - We use multiple threads for handling client requests because we assume that the number of clients will be small and the number of requests high.  
   This allows us to handle many requests at the same time.  
   If the number of clients was large, we should use a single thread that uses a `fd_set` to receive requests from all clients by utilizing non-blocking sockets.  
+- Previous two points also show that we are in fact not using thread pooling but creating and assigning threads dedicated to clients and workers as needed. Which
+  is not an issue with a low number of clients/workers and depends on if we're trying to emulate something like Redis/Nginx which doesn't rely on multiple threads
+  or something like MySQL where each client gets a dedicated thread.
