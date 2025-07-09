@@ -26,14 +26,11 @@ typedef enum {
     MSG_STORE_RESPONSE = 11,
     MSG_RETRIEVE_REQUEST = 12,
     MSG_RETRIEVE_RESPONSE = 13,
-    MSG_WORKER_REGISTRY_START = 14,
-    MSG_WORKER_ENTRY = 15,
-    MSG_WORKER_REGISTRY_END = 16,
-    MSG_DATA_EXPORT_START = 17,
-    MSG_DATA_ENTRY = 18,
-    MSG_DATA_EXPORT_END = 19,
-    MSG_WORKER_READY = 20,
-    MSG_WORKER_NOT_READY = 21,
+    MSG_WORKER_ENTRY = 14,
+    MSG_DATA_EXPORT_START = 15,
+    MSG_DATA_ENTRY = 16,
+    MSG_DATA_EXPORT_END = 17,
+    MSG_WORKER_READY = 18,
 
     MSG_PEER_NOTIFY = 30,
 
@@ -63,10 +60,7 @@ int SendStoreResponse(SOCKET socket, ErrorCode result, uint32_t clientId, const 
 int SendRetrieveRequest(SOCKET socket, uint32_t clientId, const char* key);
 int SendRetrieveResponse(SOCKET socket, ErrorCode result, uint32_t clientId, const char* key, const char* value);
 int SendWorkerReady(SOCKET socket, uint32_t workerId, uint16_t peerPort);
-int SendWorkerNotReady(SOCKET socket, uint32_t workerId);
-int SendWorkerRegistryStart(SOCKET socket, uint32_t totalWorkers);
 int SendWorkerEntry(SOCKET socket, uint32_t workerId, const char* address, uint16_t port, uint8_t shouldExportData);
-int SendWorkerRegistryEnd(SOCKET socket);
 int SendDataExportStart(SOCKET socket, uint32_t totalEntries);
 int SendDataEntry(SOCKET socket, const char* key, const char* value);
 int SendDataExportEnd(SOCKET socket);
@@ -83,8 +77,6 @@ int ReceiveStoreResponse(const char* buffer, uint16_t bufferSize, ErrorCode* res
 int ReceiveRetrieveRequest(const char* buffer, uint16_t bufferSize, uint32_t* clientId, char* key);
 int ReceiveRetrieveResponse(const char* buffer, uint16_t bufferSize, ErrorCode* result, uint32_t* clientId, char* key, char* value);
 int ReceiveWorkerReady(const char* buffer, uint16_t bufferSize, uint32_t* workerId, uint16_t* peerPort);
-int ReceiveWorkerNotReady(const char* buffer, uint16_t bufferSize, uint32_t* workerId);
-int ReceiveWorkerRegistryStart(const char* buffer, uint16_t bufferSize, uint32_t* totalWorkers);
 int ReceiveWorkerEntry(const char* buffer, uint16_t bufferSize, uint32_t* workerId, char* address, uint16_t* port, uint8_t* shouldExportData);
 int ReceiveDataExportStart(const char* buffer, uint16_t bufferSize, uint32_t* totalEntries);
 int ReceiveDataEntry(const char* buffer, uint16_t bufferSize, char* key, char* value);

@@ -274,24 +274,6 @@ int SendWorkerReady(SOCKET socket, uint32_t workerId, uint16_t peerPort) {
     return ProtocolSend(socket, MSG_WORKER_READY, buffer, offset);
 }
 
-int SendWorkerNotReady(SOCKET socket, uint32_t workerId) {
-    uint8_t buffer[MAX_MESSAGE_SIZE];
-    uint16_t offset = 0;
-
-    offset += WriteUInt32(buffer + offset, workerId);
-
-    return ProtocolSend(socket, MSG_WORKER_NOT_READY, buffer, offset);
-}
-
-int SendWorkerRegistryStart(SOCKET socket, uint32_t totalWorkers) {
-    uint8_t buffer[MAX_MESSAGE_SIZE];
-    uint16_t offset = 0;
-
-    offset += WriteUInt32(buffer + offset, totalWorkers);
-
-    return ProtocolSend(socket, MSG_WORKER_REGISTRY_START, buffer, offset);
-}
-
 int SendWorkerEntry(SOCKET socket, uint32_t workerId, const char* address, uint16_t port, uint8_t shouldExportData) {
     uint8_t buffer[MAX_MESSAGE_SIZE];
     uint16_t offset = 0;
@@ -308,13 +290,6 @@ int SendWorkerEntry(SOCKET socket, uint32_t workerId, const char* address, uint1
     offset += WriteUInt8(buffer + offset, shouldExportData);
 
     return ProtocolSend(socket, MSG_WORKER_ENTRY, buffer, offset);
-}
-
-int SendWorkerRegistryEnd(SOCKET socket) {
-    uint8_t buffer[MAX_MESSAGE_SIZE];
-    uint16_t offset = 0;
-
-    return ProtocolSend(socket, MSG_WORKER_REGISTRY_END, buffer, offset);
 }
 
 int SendDataExportStart(SOCKET socket, uint32_t totalEntries) {
@@ -404,10 +379,7 @@ const char* GetMessageTypeName(MessageType type) {
     case MSG_RETRIEVE_REQUEST: return "RETRIEVE_REQUEST";
     case MSG_RETRIEVE_RESPONSE: return "RETRIEVE_RESPONSE";
     case MSG_WORKER_READY: return "WORKER_READY";
-    case MSG_WORKER_NOT_READY: return "WORKER_NOT_READY";
-    case MSG_WORKER_REGISTRY_START: return "WORKER_REGISTRY_START";
     case MSG_WORKER_ENTRY: return "WORKER_ENTRY";
-    case MSG_WORKER_REGISTRY_END: return "WORKER_REGISTRY_END";
     case MSG_DATA_EXPORT_START: return "DATA_EXPORT_START";
     case MSG_DATA_ENTRY: return "DATA_ENTRY";
     case MSG_DATA_EXPORT_END: return "DATA_EXPORT_END";
@@ -719,17 +691,6 @@ int ReceivePeerNotify(const char* buffer, uint16_t bufferSize, char* key, char* 
     return 0;
 }
 
-int ReceiveWorkerRegistryStart(const char* buffer, uint16_t bufferSize, uint32_t* totalWorkers) {
-    if (!buffer || !totalWorkers) {
-        return -1;
-    }
-
-    if (bufferSize < 4) return -1;
-
-    *totalWorkers = ReadUInt32(buffer);
-    return 0;
-}
-
 int ReceiveError(const char* buffer, uint16_t bufferSize, ErrorCode* errorCode, char* message) {
     if (!buffer || !errorCode || !message) {
         return -1;
@@ -776,15 +737,6 @@ int ReceiveWorkerReady(const char* buffer, uint16_t bufferSize, uint32_t* worker
 
     if (offset + 2 > bufferSize) return -1;
     *peerPort = ReadUInt16(buffer + offset);
-
-    return 0;
-}
-
-int ReceiveWorkerNotReady(const char* buffer, uint16_t bufferSize, uint32_t* workerId) {
-    uint16_t offset = 0;
-
-    if (offset + 4 > bufferSize) return -1;
-    *workerId = ReadUInt32(buffer + offset);
 
     return 0;
 }

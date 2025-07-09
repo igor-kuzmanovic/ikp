@@ -573,11 +573,6 @@ int SendWorkerRegistryEntries(SOCKET socket, WorkerList* list) {
 
     EnterCriticalSection(&list->lock);
 
-    if (SendWorkerRegistryStart(socket, list->count) <= 0) {
-        LeaveCriticalSection(&list->lock);
-        return -1;
-    }
-
     WorkerNode* current = list->head;
     int sentCount = 0;
     
@@ -590,11 +585,6 @@ int SendWorkerRegistryEntries(SOCKET socket, WorkerList* list) {
             sentCount++;
             current = current->next;
         } while (current != list->head);
-    }
-
-    if (SendWorkerRegistryEnd(socket) <= 0) {
-        LeaveCriticalSection(&list->lock);
-        return -1;
     }
 
     LeaveCriticalSection(&list->lock);
@@ -642,12 +632,6 @@ int BroadcastNewWorkerJoined(WorkerList* list, int newWorkerId) {
     if (current != NULL) {
         do {
             if (current->workerId != newWorkerId && current->isConnected && current->workerSocket != INVALID_SOCKET) {
-                if (SendWorkerRegistryStart(current->workerSocket, list->count) <= 0) {
-                    PrintWarning("Failed to send registry start to worker %d", current->workerId);
-                    current = current->next;
-                    continue;
-                }
-                
                 uint8_t shouldExport = (current == sourceWorker) ? 1 : 0;
                 if (SendWorkerEntry(current->workerSocket, newWorker->workerId, newWorker->workerAddress, newWorker->workerPeerPort, shouldExport) <= 0) {
                     PrintWarning("Failed to send new worker entry to worker %d", current->workerId);
@@ -656,10 +640,6 @@ int BroadcastNewWorkerJoined(WorkerList* list, int newWorkerId) {
                         PrintInfo("Told worker %d to export data to new worker %d", current->workerId, newWorkerId);
                     }
                     successCount++;
-                }
-                
-                if (SendWorkerRegistryEnd(current->workerSocket) <= 0) {
-                    PrintWarning("Failed to send registry end to worker %d", current->workerId);
                 }
             }
             current = current->next;

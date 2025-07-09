@@ -48,7 +48,7 @@
 
 #define WORKER_THREAD_POOL_ASSIGN_TIMEOUT               100
 
-#define WORKER_STARTUP_DELAY                            100
+#define WORKER_STARTUP_DELAY                            1000
 #define WORKER_HASH_TABLE_BUCKET_COUNT                  32
 #define WORKER_DATA_EXPORT_BUCKET_YIELD_SLEEP_TIME      100
 #define WORKER_PEER_CONNECTION_RETRY_DELAY              100

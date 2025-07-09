@@ -68,22 +68,9 @@ DWORD WINAPI WorkerDataReceiverThread(LPVOID lpParam) {
                         PrintInfo("Worker %d was already ready", workerId);
                     }
 
-                    SendWorkerRegistryEnd(workerSocket);
                     PrintInfo("Sent ready acknowledgment to worker %d", workerId);
                 } else {
                     PrintError("Failed to parse worker ready message");
-                }
-                break;
-            }
-
-            case MSG_WORKER_NOT_READY: {
-                PrintInfo("Worker %d announced not ready (performing data export)", workerId);
-
-                int result = SetWorkerNotReady(context->workerList, workerId);
-                if (result == 0) {
-                    PrintInfo("Worker %d was already marked as not ready", workerId);
-                } else if (result < 0) {
-                    PrintError("Failed to mark worker %d as not ready (result: %d)", workerId, result);
                 }
                 break;
             }

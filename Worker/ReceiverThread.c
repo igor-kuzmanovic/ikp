@@ -17,7 +17,6 @@ DWORD WINAPI ReceiverThread(LPVOID lpParam) {
     int removedCount = 0;
     char key[MAX_KEY_SIZE + 1];
     char value[MAX_VALUE_SIZE + 1];
-    uint32_t totalWorkers;
     ErrorCode errorCode;
     char errorMessage[MAX_ERROR_MSG_SIZE + 1];
     uint32_t workerId;
@@ -123,16 +122,6 @@ DWORD WINAPI ReceiverThread(LPVOID lpParam) {
                     SetFinishSignal(context);
                     break;
 
-                case MSG_WORKER_REGISTRY_START: {
-
-                    if (ReceiveWorkerRegistryStart(buffer, actualSize, &totalWorkers) == 0) {
-                        PrintDebug("Worker registry update starting: %u workers", totalWorkers);
-                    } else {
-                        PrintError("Failed to parse worker registry start message");
-                    }
-                    break;
-                }
-
                 case MSG_WORKER_ENTRY: {
                     if (ReceiveWorkerEntry(buffer, actualSize, &workerId, address, &port, &shouldExportData) == 0) {
                         if (context->peerManager != NULL) {
@@ -150,18 +139,6 @@ DWORD WINAPI ReceiverThread(LPVOID lpParam) {
                         }
                     } else {
                         PrintError("Failed to parse worker entry message");
-                    }
-                    break;
-                }
-
-                case MSG_WORKER_REGISTRY_END: {
-                    PrintDebug("Worker registry update completed");
-
-                    if (context->peerManager != NULL) {
-                        activeCount = 0;
-                        removedCount = 0;
-                        FinalizePeerRegistryUpdate(context->peerManager, &activeCount, &removedCount);
-                        PrintDebug("Peer registry updated: %d active peers, %d removed", activeCount, removedCount);
                     }
                     break;
                 }
