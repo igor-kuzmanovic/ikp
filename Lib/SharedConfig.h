@@ -20,9 +20,9 @@
 
 #define NETWORK_POLLING_DELAY                           100
 
-#define CLIENT_MESSAGE_COUNT                            256
+#define CLIENT_MESSAGE_COUNT                            100
 #define CLIENT_MESSAGE_SEND_WAIT_TIME                   100
-#define CLIENT_PUT_TO_GET_TRANSITION_DELAY              2000
+#define CLIENT_PUT_TO_GET_TRANSITION_DELAY              1000
 #define CLIENT_SERVER_FULL_SLEEP_TIME                   1000
 
 #define LB_QUEUE_RETRY_DELAY                            100

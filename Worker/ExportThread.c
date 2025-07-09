@@ -32,11 +32,6 @@ DWORD WINAPI ExportThread(LPVOID lpParam) {
                 PrintInfo("Processing export request for worker %u (%s:%u)",
                     request.targetWorkerId, request.targetAddress, request.targetPort);
 
-                // TODO Can't be done like this
-                // EnterCriticalSection(&context->lock);
-                // SendWorkerNotReady(context->connectSocket, context->workerId);
-                // LeaveCriticalSection(&context->lock);
-
                 int totalEntries = GetHashTableCount(context->hashTable);
                 if (totalEntries > 0) {
                     PrintInfo("Exporting %d entries to worker %u", totalEntries, request.targetWorkerId);
@@ -51,11 +46,6 @@ DWORD WINAPI ExportThread(LPVOID lpParam) {
                 } else {
                     PrintInfo("Hash table is empty, no data to export to worker %u", request.targetWorkerId);
                 }
-
-                // TODO Can't be done like this
-                // EnterCriticalSection(&context->lock);
-                // SendWorkerReady(context->connectSocket, context->workerId, context->peerManager->peerPort);
-                // LeaveCriticalSection(&context->lock);
             } else {
                 LeaveCriticalSection(&queue->lock);
             }
